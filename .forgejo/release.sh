@@ -86,7 +86,7 @@ notes=$(
   printf 'Committed %s. ' "$(git log -1 --format=%ad --date=short "$sha")"
   # @@WEB@@ becomes the repo's address on each site
   if [ -n "$prev" ]; then printf 'Changes since %s: @@WEB@@/compare/%s...%s\n\n' "$prev" "$prev" "$tag"; else printf '\n\n'; fi
-  printf '**Install:** download `game-mod-sync-%s.tar.gz`, extract it and run `./game-mod-sync` (or `./game-mod-sync-tui`). See the README for setup.\n' "$ver"
+  printf '**Install:** download `game-mod-sync-%s.tar.gz`, extract it and run `./game-mod-sync` (or `./game-mod-sync --tui`). See the README for setup.\n' "$ver"
 )
 notes=$(printf '%s\n' "$notes" | cat -s)    # no runs of blank lines
 

@@ -23,7 +23,6 @@ One command with two interfaces; the options and behaviour are the same in both:
 
 To start in full screen without typing `--tui`, set **Edit → Default interface** to `tui` (saved
 as `DEFAULT_UI=tui` in the config file). Without a terminal (scripts, cron) it always uses text.
-`game-mod-sync-tui` still works too: it's the same as `game-mod-sync --tui`.
 
 ## Install
 

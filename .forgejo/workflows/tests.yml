@@ -27,7 +27,7 @@ jobs:
           bash --version | sed -n 1p; rsync --version | sed -n 1p; perl -v | sed -n 2p
 
       - name: Lint
-        run: shellcheck -x -S warning game-mod-sync game-mod-sync-tui lib/*.sh plugins/*/*.sh .forgejo/release.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh
+        run: shellcheck -x -S warning game-mod-sync lib/*.sh plugins/*/*.sh .forgejo/release.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh
 
       - name: Test every plugin
         run: |
