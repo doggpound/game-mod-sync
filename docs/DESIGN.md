@@ -226,8 +226,10 @@ fixed-size `tmux` terminal, presses keys, waits for each screen's text, and turn
 `tmux capture-pane -e -N` into an SVG of a terminal window (`ansi2svg.py`: Windows Terminal's
 Campbell colours, fixed-width text runs so columns line up in any font). Colours are pinned: a
 newt palette file (`NEWT_COLORS_FILE`) and `GMS_TREE_ACCENT` / `GMS_TREE_HDR_BG` for the drawn
-lists. CI runs the script to check it still gets through every screen; the pictures aren't
-compared (whiptail and fonts differ between machines), so regenerating them is a PR checklist item.
+lists. CI runs the script on every PR (it fails if a screen can't be reached) and is the
+reference: whiptail and tmux draw a few cells differently on other systems, so the committed SVGs
+are CI's. When the UI changes, the job lists the screenshots that differ and attaches its own as
+the run's `screenshots` artifact, which is what gets committed (a PR checklist item).
 
 ## Files
 

@@ -46,13 +46,23 @@ jobs:
       - name: Screenshots
         run: |
           # docs/screenshots/make.sh must still get through every screen. The
-          # pictures themselves aren't compared: whiptail and fonts differ
-          # between machines; regenerating them is a PR checklist item.
+          # committed pictures are the ones this job makes (whiptail and tmux
+          # draw slightly differently elsewhere), so a difference here means the
+          # UI changed: take the "screenshots" artifact of this run and commit it.
           if bash docs/screenshots/make.sh; then
-            git diff --quiet -- docs/screenshots || echo "note: the screenshots differ from the committed ones (expected if the UI changed - regenerate and commit)"
+            if ! git diff --quiet -- docs/screenshots; then
+              echo "note: these screenshots differ from the committed ones - commit the 'screenshots' artifact of this run if the change is intended:"
+              git diff --name-only -- docs/screenshots | sed 's/^/  /'
+            fi
           else
             touch "$RUNNER_TEMP/failed"
           fi
+
+      - name: Screenshots artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: screenshots
+          path: docs/screenshots/*.svg
 
       - name: Result
         run: if [ -e "$RUNNER_TEMP/failed" ]; then echo "failed - see the steps above"; exit 1; fi
