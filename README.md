@@ -2,18 +2,26 @@
 
 <h1 align="center">game-mod-sync</h1>
 
-<p align="center">
-  <a href="tests"><img src="docs/badges/tests.svg" alt="tests"></a>
-  <a href=".forgejo/workflows/release.yml"><img src="docs/badges/version.svg" alt="version"></a>
-  <a href="tests/core/sync.sh"><img src="docs/badges/core-sync.svg" alt="end-to-end sync"></a>
-  <a href="tests/core/interface.sh"><img src="docs/badges/core-interface.svg" alt="interface choice"></a>
-</p>
-<p align="center">
-  <a href="plugins/sources/gale.md"><img src="docs/badges/group-sources.svg" alt="sources"></a>
-  <a href="plugins/loaders/bepinex.md"><img src="docs/badges/group-loaders.svg" alt="loaders"></a>
-  <a href="plugins/backends/amp.md"><img src="docs/badges/group-backends.svg" alt="server types"></a>
-  <a href="plugins/games/valheim.conf"><img src="docs/badges/group-games.svg" alt="games"></a>
-</p>
+<table align="center">
+  <tr>
+    <th align="right">Status</th>
+    <td>
+      <a href="tests"><img src="docs/badges/tests.svg" alt="tests"></a>
+      <a href=".forgejo/workflows/release.yml"><img src="docs/badges/version.svg" alt="version"></a>
+      <a href="tests/core/sync.sh"><img src="docs/badges/core-sync.svg" alt="end-to-end sync"></a>
+      <a href="tests/core/interface.sh"><img src="docs/badges/core-interface.svg" alt="interface choice"></a>
+    </td>
+  </tr>
+  <tr>
+    <th align="right">Plugins</th>
+    <td>
+      <a href="plugins/sources/gale.md"><img src="docs/badges/group-sources.svg" alt="sources"></a>
+      <a href="plugins/loaders/bepinex.md"><img src="docs/badges/group-loaders.svg" alt="loaders"></a>
+      <a href="plugins/backends/amp.md"><img src="docs/badges/group-backends.svg" alt="server types"></a>
+      <a href="plugins/games/valheim.conf"><img src="docs/badges/group-games.svg" alt="games"></a>
+    </td>
+  </tr>
+</table>
 
 > [!WARNING]
 > **Made with AI.** This project was written by Claude, an AI model made by Anthropic, with a
