@@ -22,7 +22,9 @@ done
 . "$REPO/tests/lib.sh"
 sandbox_init
 unset GMS_TTY                        # a real terminal this time (tmux)
-trap 'tmux -L gms-shots kill-server 2>/dev/null || true; sandbox_done' EXIT
+SOCK=""                              # this run's tmux server (a new one per start)
+export TMUX_TMPDIR="$SANDBOX"        # its socket goes away with the sandbox
+trap '[ -z "$SOCK" ] || tmux -L "$SOCK" kill-server 2>/dev/null || true; sandbox_done' EXIT
 
 P=$(gale_profile valheim MyProfile)
 mod() { # FOLDER ID NAME - a mod in the profile
@@ -59,9 +61,11 @@ printf 'gale\tvalheim\tMyProfile\tamp\tamp@game.example.com\t%s\t\n' "$S" >"$GMS
 # whiptail's Ubuntu-style purple theme, and the drawn lists' matching colours.
 printf 'root=,magenta\ncheckbox=,magenta\nentry=,magenta\nlabel=magenta,\nactlistbox=,magenta\nhelpline=,magenta\nroottext=,magenta\nemptyscale=magenta\ndisabledentry=magenta,\n' >"$SANDBOX/palette"
 COLS=100 ROWS=30
-T() { tmux -L gms-shots "$@"; }
+TUI_SHOT=(--rows "$ROWS" --fill 5)   # whole screen, on whiptail's magenta backdrop
+T() { tmux -L "$SOCK" "$@"; }
 start() { # ARGS... - start game-mod-sync in a fresh terminal
-  T kill-server 2>/dev/null || true
+  [ -z "$SOCK" ] || T kill-server 2>/dev/null || true
+  SOCK="gms-shots-$$-${RANDOM}"        # a fresh server: no race with the old one exiting
   T -f /dev/null new-session -d -x "$COLS" -y "$ROWS" \
     "env PATH='$PATH' HOME='$HOME' XDG_DATA_HOME='$XDG_DATA_HOME' XDG_CACHE_HOME='$XDG_CACHE_HOME' \
      GMS_CONFIG_DIR='$GMS_CONFIG_DIR' GMS_NO_SSH_MUX=1 TERM=xterm-256color LANG=C.UTF-8 \
@@ -78,9 +82,10 @@ wait_for() { # TEXT - until the screen shows TEXT (max 20 s)
   echo "timed out waiting for: $1" >&2; T capture-pane -p >&2; exit 1
 }
 keys() { T send-keys "$@"; sleep 0.4; }
-shot() { # NAME TITLE - save the screen as NAME.svg
-  T capture-pane -e -N -p | python3 "$HERE/ansi2svg.py" "$2" >"$HERE/$1.svg"
-  echo "  $1.svg"
+shot() { # NAME TITLE [ANSI2SVG-OPTIONS] - save the screen as NAME.svg
+  local name=$1 title=$2; shift 2
+  T capture-pane -e -N -p | python3 "$HERE/ansi2svg.py" --cols "$COLS" "$@" "$title" >"$HERE/$name.svg"
+  echo "  $name.svg"
 }
 
 echo "Screenshots:"
@@ -97,14 +102,14 @@ shot cli-review "game-mod-sync"
 # Full screen: menu, the mods preview, config files with a row opened, review
 start --tui
 wait_for "Which profile do you want to sync?"
-shot tui-menu "game-mod-sync --tui"
+shot tui-menu "game-mod-sync --tui" "${TUI_SHOT[@]}"
 keys Enter
 wait_for "OK continues to"
-shot tui-preview "game-mod-sync --tui"
+shot tui-preview "game-mod-sync --tui" "${TUI_SHOT[@]}"
 keys Enter
 wait_for "Ticked files are copied"
 keys Down Right
-shot tui-configs "game-mod-sync --tui"
+shot tui-configs "game-mod-sync --tui" "${TUI_SHOT[@]}"
 keys Enter
 wait_for "Apply these changes"
-shot tui-review "game-mod-sync --tui"
+shot tui-review "game-mod-sync --tui" "${TUI_SHOT[@]}"

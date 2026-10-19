@@ -2,7 +2,13 @@
 """Turn a terminal screen captured by `tmux capture-pane -e -p` into an SVG
 picture of a terminal window. Used by docs/screenshots/make.sh.
 
-    ansi2svg.py TITLE < capture.txt > screen.svg
+    ansi2svg.py [--cols N] [--rows N] [--fill COLOUR] TITLE < capture.txt > screen.svg
+
+--cols / --rows give the screen's size, so the picture doesn't depend on how
+much of the blank right and bottom edges tmux happens to include (3.4 pads
+lines, 3.3 doesn't). --fill is the background of cells with no colour of
+their own: tmux 3.3 drops the colour of cells a program cleared, e.g.
+whiptail's backdrop, so the TUI shots pass that colour (a 0-255 number).
 
 Colours: the 16 base colours of Windows Terminal's default theme (Campbell),
 the xterm 256-colour cube and grey ramp, and 24-bit colours. Each run of text
@@ -86,10 +92,20 @@ def parse(lines):
 
 
 def main():
-    title = sys.argv[1] if len(sys.argv) > 1 else "game-mod-sync"
-    lines = sys.stdin.read().rstrip("\n").split("\n")
+    args, opts = sys.argv[1:], {}
+    while len(args) > 1 and args[0] in ("--cols", "--rows", "--fill"):
+        opts[args[0][2:]] = int(args[1]); args = args[2:]
+    title = args[0] if args else "game-mod-sync"
+    lines = sys.stdin.read().split("\n")
+    if "rows" in opts:
+        lines = (lines + [""] * opts["rows"])[:opts["rows"]]
+    else:
+        while lines and not lines[-1].strip():
+            lines.pop()
     rows = parse(lines)
-    cols = max([len(r) for r in rows] + [80])
+    fill = colour256(opts["fill"]) if "fill" in opts else None
+    cols = opts.get("cols") or max([len(r) for r in rows] + [80])
+    rows = [[(c, f, b or fill, bo) for c, f, b, bo in r[:cols]] + [(" ", None, fill, False)] * (cols - len(r)) for r in rows]
     w = int(PAD * 2 + cols * CW)
     h = int(BAR + PAD * 2 + len(rows) * CH)
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" aria-label="{html.escape(title)}">',
