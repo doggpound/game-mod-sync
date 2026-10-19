@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="868" height="568" viewBox="0 0 868 568" role="img" aria-label="game-mod-sync --tui">
+<title>game-mod-sync --tui</title>
+<rect width="868" height="568" rx="10" fill="#0c0c0c"/>
+<rect width="868" height="30" rx="10" fill="#2b2b2b"/><rect y="20" width="868" height="10" fill="#2b2b2b"/>
+<circle cx="18" cy="15" r="6" fill="#ff5f57"/><circle cx="38" cy="15" r="6" fill="#febc2e"/><circle cx="58" cy="15" r="6" fill="#28c840"/>
+<text x="434" y="20" fill="#a0a0a0" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" text-anchor="middle">game-mod-sync --tui</text>
+<g font-family="Cascadia Mono,Consolas,DejaVu Sans Mono,Menlo,monospace" font-size="14">
+<rect x="14.0" y="44" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="22.4" y="57" fill="#cccccc" textLength="159.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">game-mod-sync 0.0.1</text>
+<rect x="14.0" y="61" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="78" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="95" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="112" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="129" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="146" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="163" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="180" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="180" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="736.4" y="180" width="118.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="193" fill="#0c0c0c" textLength="243.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">┌───────────────────────────┤</text>
+<text x="375.2" y="193" fill="#c50f1f" font-weight="bold" textLength="100.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Config files</text>
+<text x="484.4" y="193" fill="#0c0c0c" textLength="252.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">├────────────────────────────┐</text>
+<rect x="14.0" y="197" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="197" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="197" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="210" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ Ticked files are copied to the server.                                │</text>
+<rect x="14.0" y="214" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="214" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="214" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="227" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ Not copied (client mods only): FastLink                               │</text>
+<rect x="14.0" y="231" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="231" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="231" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="244" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│                                                                       │</text>
+<rect x="14.0" y="248" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="248" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="140.0" y="248" width="580.2" height="17.6" fill="#5f0087" shape-rendering="crispEdges"/>
+<rect x="719.6" y="248" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="248" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="261" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="198.8" y="261" fill="#f2f2f2" font-weight="bold" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">STATUS   SIDE    MOD            FILE</text>
+<text x="728.0" y="261" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<rect x="14.0" y="265" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="265" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="140.0" y="265" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="719.6" y="265" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="265" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="278" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="165.2" y="278" fill="#f2f2f2" textLength="470.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[*] new      both    AzuClock       Azumatt.AzuClock.cfg</text>
+<text x="728.0" y="278" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<rect x="14.0" y="282" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="282" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="140.0" y="282" width="571.8" height="17.6" fill="#c50f1f" shape-rendering="crispEdges"/>
+<rect x="711.2" y="282" width="9.0" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="719.6" y="282" width="9.0" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="728.0" y="282" width="9.0" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="282" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="295" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="148.4" y="295" fill="#f2f2f2" font-weight="bold" textLength="562.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">▾ [ ] differs  server  ServersideQoL  argusmagnus.ServersideQoL.cfg</text>
+<text x="728.0" y="295" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<rect x="14.0" y="299" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="299" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="140.0" y="299" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="719.6" y="299" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="299" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="312" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="249.2" y="312" fill="#bcbcbc" textLength="142.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[AutoStore] Range</text>
+<text x="728.0" y="312" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<rect x="14.0" y="316" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="316" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="140.0" y="316" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="719.6" y="316" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="316" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="329" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="282.8" y="329" fill="#bcbcbc" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">server: 4</text>
+<text x="728.0" y="329" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<rect x="14.0" y="333" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="333" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="140.0" y="333" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="719.6" y="333" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="333" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="346" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="282.8" y="346" fill="#bcbcbc" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">yours:  8</text>
+<text x="728.0" y="346" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<rect x="14.0" y="350" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="350" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="350" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="363" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│                                                                       │</text>
+<rect x="14.0" y="367" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="367" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="367" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="380" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ H - Help Menu                                                         │</text>
+<rect x="14.0" y="384" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="384" width="177.0" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="299.6" y="384" width="34.2" height="17.6" fill="#c50f1f" shape-rendering="crispEdges"/>
+<rect x="333.2" y="384" width="403.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="384" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="397" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="299.6" y="397" fill="#f2f2f2" font-weight="bold" textLength="33.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&lt;Ok&gt;</text>
+<text x="492.8" y="397" fill="#0c0c0c" textLength="243.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&lt;Back&gt;                      │</text>
+<rect x="14.0" y="401" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="123.2" y="401" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="744.8" y="401" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="123.2" y="414" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">└───────────────────────────────────────────────────────────────────────┘</text>
+<rect x="14.0" y="418" width="118.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="744.8" y="418" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="435" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="452" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="469" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="486" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="503" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="520" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="537" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+</g></svg>

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="868" height="551" viewBox="0 0 868 551" role="img" aria-label="game-mod-sync">
+<title>game-mod-sync</title>
+<rect width="868" height="551" rx="10" fill="#0c0c0c"/>
+<rect width="868" height="30" rx="10" fill="#2b2b2b"/><rect y="20" width="868" height="10" fill="#2b2b2b"/>
+<circle cx="18" cy="15" r="6" fill="#ff5f57"/><circle cx="38" cy="15" r="6" fill="#febc2e"/><circle cx="58" cy="15" r="6" fill="#28c840"/>
+<text x="434" y="20" fill="#a0a0a0" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" text-anchor="middle">game-mod-sync</text>
+<g font-family="Cascadia Mono,Consolas,DejaVu Sans Mono,Menlo,monospace" font-size="14">
+<text x="14.0" y="57" fill="#cccccc" font-weight="bold" textLength="159.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Valheim / MyProfile</text>
+<text x="190.4" y="57" fill="#cccccc" textLength="16.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">-&gt;</text>
+<text x="224.0" y="57" fill="#cccccc" font-weight="bold" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Valheim01</text>
+<text x="308.0" y="57" fill="#cccccc" textLength="159.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">on game.example.com</text>
+<text x="14.0" y="74" fill="#3a96dd" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">==&gt;</text>
+<text x="47.6" y="74" fill="#cccccc" textLength="621.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Comparing Valheim / MyProfile with the server (checksums): BepInEx/plugins</text>
+<text x="39.2" y="91" fill="#13a10e" textLength="42.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">+ new</text>
+<text x="131.6" y="91" fill="#cccccc" textLength="134.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Azumatt-AzuClock</text>
+<text x="39.2" y="108" fill="#c19c00" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">~ updated</text>
+<text x="131.6" y="108" fill="#cccccc" textLength="210.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">ArgusMagnus-ServersideQoL</text>
+<text x="39.2" y="125" fill="#c50f1f" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">- removed</text>
+<text x="131.6" y="125" fill="#cccccc" textLength="117.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Someone-OldMod</text>
+<text x="14.0" y="142" fill="#3a96dd" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">==&gt;</text>
+<text x="47.6" y="142" fill="#cccccc" textLength="319.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Comparing configs (BepInEx/config) ...</text>
+<text x="14.0" y="159" fill="#3a96dd" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">==&gt;</text>
+<text x="47.6" y="159" fill="#cccccc" textLength="411.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Reading the server&#x27;s versions of config files ...</text>
+<text x="14.0" y="193" fill="#cccccc" textLength="260.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">2 file(s) to send, 1 to delete.</text>
+<text x="14.0" y="227" fill="#cccccc" font-weight="bold" textLength="151.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">-- Config files --</text>
+<text x="14.0" y="244" fill="#cccccc" textLength="319.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Ticked files are copied to the server.</text>
+<text x="14.0" y="261" fill="#cccccc" textLength="327.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Not copied (client mods only): FastLink</text>
+<text x="98.0" y="278" fill="#cccccc" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">STATUS   SIDE    MOD            FILE</text>
+<text x="39.2" y="295" fill="#cccccc" font-weight="bold" textLength="16.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">1)</text>
+<text x="64.4" y="295" fill="#cccccc" textLength="470.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[x] new      both    AzuClock       Azumatt.AzuClock.cfg</text>
+<text x="39.2" y="312" fill="#cccccc" font-weight="bold" textLength="16.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">2)</text>
+<text x="64.4" y="312" fill="#cccccc" textLength="546.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[ ] differs  server  ServersideQoL  argusmagnus.ServersideQoL.cfg</text>
+<text x="14.0" y="329" fill="#cccccc" textLength="781.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Numbers to tick/untick, Enter to save, d = show the full differences, h = help, b to go back:</text>
+<text x="14.0" y="346" fill="#cccccc" textLength="453.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Valheim / MyProfile  -&gt;  Valheim01 on game.example.com</text>
+<text x="14.0" y="380" fill="#cccccc" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Mods: 2 file(s) to send, 1 to delete</text>
+<text x="39.2" y="397" fill="#cccccc" textLength="226.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">+ new      Azumatt-AzuClock</text>
+<text x="39.2" y="414" fill="#cccccc" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">~ updated  ArgusMagnus-ServersideQoL</text>
+<text x="39.2" y="431" fill="#cccccc" textLength="210.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">- removed  Someone-OldMod</text>
+<text x="14.0" y="465" fill="#cccccc" textLength="193.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Config files to copy: 1</text>
+<text x="39.2" y="482" fill="#cccccc" textLength="436.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">new      both    AzuClock       Azumatt.AzuClock.cfg</text>
+<text x="14.0" y="516" fill="#cccccc" textLength="596.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Replaced and deleted files are kept in .mod-sync-backups on the server.</text>
+<text x="14.0" y="533" fill="#cccccc" textLength="840.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Apply these changes to the server? (2 file(s) to send, 1 to delete, 1 config file(s) to copy) [y/N]:</text>
+</g></svg>

@@ -27,7 +27,10 @@ TREE_PRESSED="" TREE_KEYS=""
 # plain newt and dialog are blue. The table's header bar is the table colour
 # 20% darker: the terminal is asked for that colour's RGB (OSC 4); terminals
 # that don't answer get a fixed dark shade from the 256-colour palette.
-TREE_ACCENT="" TREE_HDR_BG=""
+# GMS_TREE_ACCENT / GMS_TREE_HDR_BG fix both (docs/screenshots/make.sh does, so
+# screenshots look the same on every machine).
+TREE_ACCENT=${GMS_TREE_ACCENT:-} TREE_HDR_BG=${GMS_TREE_HDR_BG:-}
+[ -n "$TREE_HDR_BG" ] || TREE_ACCENT=""
 _tree_colors() {
   [ -z "$TREE_ACCENT" ] || return 0
   if [ "${TUI_BIN:-}" = whiptail ] && grep -qs '^root=,magenta' /etc/newt/palette; then TREE_ACCENT=5; else TREE_ACCENT=4; fi
