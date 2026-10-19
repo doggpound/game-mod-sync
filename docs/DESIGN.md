@@ -147,8 +147,8 @@ Below 60x16 the plain whiptail/dialog menu and checklist are used.
 from the config file (`cli` or `tui`, set in Edit → Default interface; read with `sed`, before
 the config is loaded), else text. A saved `tui` falls back to text without a terminal (scripts,
 cron). It sets `GMS_UI` (`text` or `tui`) and `GMS_UI_FROM` (shown by `--config`), loads
-`lib/core.sh` and calls `gms_main`, which ignores `--tui` / `--cli`. `game-mod-sync-tui` only runs
-`game-mod-sync --tui`, so old links keep working. All behaviour lives in the core. The core never prints or
+`lib/core.sh` and calls `gms_main`, which ignores `--tui` / `--cli`.
+All behaviour lives in the core. The core never prints or
 reads directly; it only calls the UI functions below, which `lib/ui-text.sh` and `lib/ui-tui.sh`
 both implement:
 
@@ -221,7 +221,7 @@ both interfaces without changes.
 
 | Path | Purpose |
 |---|---|
-| `game-mod-sync` | Launcher: picks the interface, loads the core (`game-mod-sync-tui` = `--tui`) |
+| `game-mod-sync` | Launcher: picks the interface, loads the core |
 | `lib/core.sh` | Everything else: options, plugin loading, menus' content, setup, preview, sync |
 | `lib/ui-text.sh` / `lib/ui-tui.sh` | The two interfaces (same functions) |
 | `lib/common.sh` | SSH connection reuse, config file and targets file |
@@ -342,4 +342,4 @@ matching against the real DLLs, plus an end-to-end run with a new server-side mo
 client+server config (ticked and replaced, old one in the backups), a client-only one (listed, not
 copied), comment- and CRLF-only differences (hidden), a removed mod's leftover (hidden), `-y` (new
 only), Back (nothing changed), and no network (tags unknown, files offered).
-Lint: `shellcheck game-mod-sync game-mod-sync-tui lib/*.sh plugins/*/*.sh` (settings in `.shellcheckrc`).
+Lint: `shellcheck game-mod-sync lib/*.sh plugins/*/*.sh` (settings in `.shellcheckrc`).

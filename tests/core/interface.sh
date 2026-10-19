@@ -28,10 +28,6 @@ t_saved_tui_falls_back_to_text_without_a_terminal() {
   assert_eq "cli (DEFAULT_UI=tui, but no terminal)" "$(iface)" "interface"
 }
 
-t_old_tui_command_still_works() {
-  assert_eq "tui (--tui)" "$("$REPO/game-mod-sync-tui" --config 2>&1 | sed -n 's/^interface: *//p')" "interface"
-}
-
 t_the_default_is_saved_in_the_config_file() {
   load_app
   DEFAULT_UI=tui
