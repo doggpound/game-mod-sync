@@ -7,8 +7,9 @@
 #   tests/run.sh                 run everything
 #   tests/run.sh gale amp        only files with these names
 #   tests/run.sh --badges DIR    also write the README's status badges (SVG) to
-#                                DIR: tests.svg, version.svg, group-<kind>.svg
-#                                (one per kind of plugin), core-<name>.svg
+#                                DIR: panel.svg (what the README shows: all of
+#                                them in one box) and the single badges it's
+#                                made of: tests, version, core-<name>, group-<kind>
 #
 # The README's badges are files in docs/badges/, so they show on Forgejo, on
 # GitHub (mirror) and in any clone. After changing tests, plugins or VERSION:
@@ -121,6 +122,39 @@ group_badge() { # FILE LABEL "TEXT|COLOUR"...
 </svg>
 SVG
 }
+# The README's badge panel: one image, a rounded light-grey box with a label in
+# front of each row ("Status", "Plugins") and the badges (the files above,
+# nested as <svg> elements, their ids made unique) drawn in it. A README can't
+# style HTML (no CSS on GitHub or Forgejo), hence an image.
+panel() { # FILE "LABEL|badge.svg badge.svg ..."...
+  local f=$1 dir row label b i=0 y w rw maxw=0 bw body="" labels="" pad=14 lw=74 gap=6 rh=20 rg=10 n=0
+  dir=$(dirname "$f")
+  shift
+  y=$pad
+  for row in "$@"; do
+    label=${row%%|*} rw=0
+    labels+="<text x=\"$((pad + lw - 14))\" y=\"$((y + 14))\" text-anchor=\"end\">$label</text>"
+    for b in ${row#*|}; do
+      i=$((i + 1))
+      w=$(sed -n 's/^<svg [^>]* width="\([0-9]*\)".*/\1/p' "$dir/$b" | head -n 1)
+      bw=$((pad + lw + rw))
+      body+="<svg x=\"$bw\" y=\"$y\" width=\"$w\" height=\"20\">$(sed -e '1d' -e '$d' -e "s/id=\"s\"/id=\"s$i\"/; s/url(#s)/url(#s$i)/; s/id=\"r\"/id=\"r$i\"/; s/url(#r)/url(#r$i)/; /<title>/d" "$dir/$b")</svg>"
+      rw=$((rw + w + gap))
+    done
+    rw=$((rw - gap)); [ "$rw" -gt "$maxw" ] && maxw=$rw
+    y=$((y + rh + rg)); n=$((n + 1))
+  done
+  local W=$((pad + lw + maxw + pad)) H=$((y - rg + pad))
+  cat >"$f" <<SVG
+<svg xmlns="http://www.w3.org/2000/svg" width="$W" height="$H" role="img" aria-label="Status and plugin test badges">
+  <title>game-mod-sync: status and plugin tests</title>
+  <rect x="0.5" y="0.5" width="$((W - 1))" height="$((H - 1))" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
+  <line x1="$((pad + lw - 6))" y1="$((pad - 4))" x2="$((pad + lw - 6))" y2="$((H - pad + 4))" stroke="#d0d7de"/>
+  <g fill="#57606a" font-family="-apple-system,Segoe UI,Helvetica,Arial,DejaVu Sans,sans-serif" font-size="12" font-weight="600">$labels</g>
+  $body
+</svg>
+SVG
+}
 if [ -n "$badges" ]; then
   mkdir -p "$badges"
   # one badge per kind of plugin: "server | AMP 8 | SSH 5" (catch-alls like
@@ -146,6 +180,9 @@ if [ -n "$badges" ]; then
   badge "$badges/version.svg" version "v$v" "#8e2de2"
   if [ "$failed" = 0 ]; then badge "$badges/tests.svg" tests "$total passed" "#4c1"
   else badge "$badges/tests.svg" tests "$failed of $total failed" "#e05d44"; fi
+  core=""; for b in "$badges"/core-*.svg; do [ -f "$b" ] && core="${b##*/} $core"; done   # core-sync, then core-interface
+  groups=""; for kind in sources loaders backends games; do [ -f "$badges/group-$kind.svg" ] && groups+="group-$kind.svg "; done
+  panel "$badges/panel.svg" "Status|version.svg tests.svg $core" "Plugins|$groups"
   echo "badges written to $badges"
 fi
 [ "$failed" = 0 ]

@@ -2,26 +2,9 @@
 
 <h1 align="center">game-mod-sync</h1>
 
-<table align="center">
-  <tr>
-    <th align="right">Status</th>
-    <td>
-      <a href="tests"><img src="docs/badges/tests.svg" alt="tests"></a>
-      <a href=".forgejo/workflows/release.yml"><img src="docs/badges/version.svg" alt="version"></a>
-      <a href="tests/core/sync.sh"><img src="docs/badges/core-sync.svg" alt="end-to-end sync"></a>
-      <a href="tests/core/interface.sh"><img src="docs/badges/core-interface.svg" alt="interface choice"></a>
-    </td>
-  </tr>
-  <tr>
-    <th align="right">Plugins</th>
-    <td>
-      <a href="plugins/sources/gale.md"><img src="docs/badges/group-sources.svg" alt="sources"></a>
-      <a href="plugins/loaders/bepinex.md"><img src="docs/badges/group-loaders.svg" alt="loaders"></a>
-      <a href="plugins/backends/amp.md"><img src="docs/badges/group-backends.svg" alt="server types"></a>
-      <a href="plugins/games/valheim.conf"><img src="docs/badges/group-games.svg" alt="games"></a>
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <a href="tests"><img src="docs/badges/panel.svg" alt="Status: version, tests, end-to-end sync, interface choice. Plugins: sources, loaders, server types, games."></a>
+</p>
 
 > [!WARNING]
 > **Made with AI.** This project was written by Claude, an AI model made by Anthropic, with a
@@ -198,7 +181,8 @@ tests/run.sh amp gale   # only these files
 
 `.forgejo/workflows/tests.yml` runs them (and `shellcheck`) on every push and pull request.
 `main` is protected: changes come in through pull requests, and these checks must pass before
-one is merged. The badges at the top of this page are files in `docs/badges/`; after changing
+one is merged. The badge panel at the top of this page (`docs/badges/panel.svg`, made from the
+single badges next to it) is generated; after changing
 tests, plugins or `VERSION`, run `tests/run.sh --badges docs/badges` and commit them (CI checks
 they match). A new plugin gets a test file next to the
 others, with a `# badge: KIND: NAME` line and functions named `t_...`; it appears in its group's badge
