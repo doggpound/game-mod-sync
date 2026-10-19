@@ -217,6 +217,18 @@ inside loops that read from a pipe. The TUI uses `whiptail` if present, else `di
 Plugins may call the same functions (e.g. the `ssh` server type uses `ui_ask`), so they work in
 both interfaces without changes.
 
+## Screenshots
+
+The README's screenshots are generated, so they can be kept current: `docs/screenshots/make.sh`
+builds a demo setup with the tests' helpers (`tests/lib.sh`: a Gale profile, an AMP server that is
+a local folder behind a stand-in `ssh`, neutral names), runs `game-mod-sync --cli` and `--tui` in a
+fixed-size `tmux` terminal, presses keys, waits for each screen's text, and turns
+`tmux capture-pane -e -N` into an SVG of a terminal window (`ansi2svg.py`: Windows Terminal's
+Campbell colours, fixed-width text runs so columns line up in any font). Colours are pinned: a
+newt palette file (`NEWT_COLORS_FILE`) and `GMS_TREE_ACCENT` / `GMS_TREE_HDR_BG` for the drawn
+lists. CI runs the script to check it still gets through every screen; the pictures aren't
+compared (whiptail and fonts differ between machines), so regenerating them is a PR checklist item.
+
 ## Files
 
 | Path | Purpose |

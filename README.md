@@ -24,6 +24,36 @@ One command with two interfaces; the options and behaviour are the same in both:
 To start in full screen without typing `--tui`, set **Edit → Default interface** to `tui` (saved
 as `DEFAULT_UI=tui` in the config file). Without a terminal (scripts, cron) it always uses text.
 
+## Screenshots
+
+<p align="center"><img src="docs/screenshots/tui-configs.svg" width="760" alt="Full-screen interface: the config files list, with one differing file opened to show the setting that differs (server value, then yours)"></p>
+
+<details>
+<summary>More screenshots</summary>
+
+**Main menu** (`--tui`)
+
+<img src="docs/screenshots/tui-menu.svg" width="760" alt="Full-screen main menu with one profile, Edit and Help keys, and Ok / Exit buttons">
+
+**What will change on the server**
+
+<img src="docs/screenshots/tui-preview.svg" width="760" alt="The per-mod preview: one new, one updated and one removed mod">
+
+**Review before anything is applied**
+
+<img src="docs/screenshots/tui-review.svg" width="760" alt="The review screen listing the mod changes and the picked config files, with Yes / No">
+
+**Text interface** (`--cli`, the default)
+
+<img src="docs/screenshots/cli-configs.svg" width="760" alt="Text interface: the menu, the per-mod preview and the config files checklist">
+
+<img src="docs/screenshots/cli-review.svg" width="760" alt="Text interface: the review and the apply question">
+
+</details>
+
+The pictures come from `docs/screenshots/make.sh`, which runs `game-mod-sync` against a made-up
+demo setup in a terminal and saves each screen. It's re-run whenever either interface changes.
+
 ## Install
 
 Needs `bash`, `rsync` and `ssh` locally (on Windows, use WSL) and `rsync` on the server.

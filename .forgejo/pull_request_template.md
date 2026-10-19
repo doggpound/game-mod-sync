@@ -11,6 +11,7 @@
 - [ ] `tests/run.sh` passes
 - [ ] `shellcheck -x -S warning game-mod-sync lib/*.sh plugins/*/*.sh tests/*.sh tests/*/*.sh tests/plugins/*/*.sh` is clean
 - [ ] Badges regenerated if tests, plugins or `VERSION` changed (`tests/run.sh --badges docs/badges`)
+- [ ] Screenshots regenerated if anything visible in either interface changed (`docs/screenshots/make.sh`)
 - [ ] Tried by hand (say how: `--cli`, `--tui`, server type, game):
 
 ## Release

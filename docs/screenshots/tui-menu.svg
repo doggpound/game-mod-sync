@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="868" height="568" viewBox="0 0 868 568" role="img" aria-label="game-mod-sync --tui">
+<title>game-mod-sync --tui</title>
+<rect width="868" height="568" rx="10" fill="#0c0c0c"/>
+<rect width="868" height="30" rx="10" fill="#2b2b2b"/><rect y="20" width="868" height="10" fill="#2b2b2b"/>
+<circle cx="18" cy="15" r="6" fill="#ff5f57"/><circle cx="38" cy="15" r="6" fill="#febc2e"/><circle cx="58" cy="15" r="6" fill="#28c840"/>
+<text x="434" y="20" fill="#a0a0a0" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" text-anchor="middle">game-mod-sync --tui</text>
+<g font-family="Cascadia Mono,Consolas,DejaVu Sans Mono,Menlo,monospace" font-size="14">
+<rect x="14.0" y="44" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="22.4" y="57" fill="#cccccc" textLength="159.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">game-mod-sync 0.0.1</text>
+<rect x="14.0" y="61" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="78" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="95" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="112" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="129" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="146" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="163" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="180" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="197" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="214" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="214" width="546.6" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="702.8" y="214" width="151.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="227" fill="#0c0c0c" textLength="226.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">┌─────────────────────────┤</text>
+<text x="392.0" y="227" fill="#c50f1f" font-weight="bold" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Main menu</text>
+<text x="476.0" y="227" fill="#0c0c0c" textLength="226.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">├─────────────────────────┐</text>
+<rect x="14.0" y="231" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="231" width="546.6" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="231" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="244" fill="#0c0c0c" textLength="546.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ Which profile do you want to sync?                            │</text>
+<rect x="14.0" y="248" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="248" width="546.6" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="248" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="261" fill="#0c0c0c" textLength="546.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│                                                               │</text>
+<rect x="14.0" y="265" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="265" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="173.6" y="265" width="513.0" height="17.6" fill="#c50f1f" shape-rendering="crispEdges"/>
+<rect x="686.0" y="265" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="265" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="278" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="198.8" y="278" fill="#f2f2f2" font-weight="bold" textLength="470.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">1  Valheim / MyProfile  -&gt; Valheim01 on game.example.com</text>
+<text x="694.4" y="278" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<rect x="14.0" y="282" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="282" width="546.6" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="282" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="295" fill="#0c0c0c" textLength="546.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│                                                               │</text>
+<rect x="14.0" y="299" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="299" width="546.6" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="299" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="312" fill="#0c0c0c" textLength="546.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ E - Edit                                                      │</text>
+<rect x="14.0" y="316" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="316" width="546.6" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="316" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="329" fill="#0c0c0c" textLength="546.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ H - Help Menu                                                 │</text>
+<rect x="14.0" y="333" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="333" width="160.2" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="316.4" y="333" width="34.2" height="17.6" fill="#c50f1f" shape-rendering="crispEdges"/>
+<rect x="350.0" y="333" width="353.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="333" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="346" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="316.4" y="346" fill="#f2f2f2" font-weight="bold" textLength="33.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&lt;Ok&gt;</text>
+<text x="492.8" y="346" fill="#0c0c0c" textLength="210.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&lt;Exit&gt;                  │</text>
+<rect x="14.0" y="350" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="156.8" y="350" width="546.6" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
+<rect x="711.2" y="350" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<text x="156.8" y="363" fill="#0c0c0c" textLength="546.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">└───────────────────────────────────────────────────────────────┘</text>
+<rect x="14.0" y="367" width="151.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="711.2" y="367" width="143.4" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="384" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="401" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="418" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="435" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="452" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="469" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="486" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="503" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="520" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="14.0" y="537" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+</g></svg>

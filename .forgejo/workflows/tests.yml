@@ -19,7 +19,7 @@ jobs:
       - name: Tools
         run: |
           need=""
-          for t in rsync perl shellcheck; do command -v "$t" >/dev/null || need="$need $t"; done
+          for t in rsync perl shellcheck tmux whiptail python3; do command -v "$t" >/dev/null || need="$need $t"; done
           if [ -n "$need" ]; then
             if command -v sudo >/dev/null && [ "$(id -u)" != 0 ]; then S=sudo; else S=""; fi
             $S apt-get update -qq && $S apt-get install -y -qq $need >/dev/null
@@ -27,7 +27,7 @@ jobs:
           bash --version | sed -n 1p; rsync --version | sed -n 1p; perl -v | sed -n 2p
 
       - name: Lint
-        run: shellcheck -x -S warning game-mod-sync lib/*.sh plugins/*/*.sh .forgejo/release.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh
+        run: shellcheck -x -S warning game-mod-sync lib/*.sh plugins/*/*.sh .forgejo/release.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh docs/screenshots/make.sh
 
       - name: Test every plugin
         run: |
@@ -40,6 +40,17 @@ jobs:
           if ! diff -r docs/badges "$RUNNER_TEMP/badges" >/dev/null 2>&1; then
             echo "docs/badges/ is out of date - run: tests/run.sh --badges docs/badges, and commit it"
             diff -r docs/badges "$RUNNER_TEMP/badges" | head -n 20 || true
+            touch "$RUNNER_TEMP/failed"
+          fi
+
+      - name: Screenshots
+        run: |
+          # docs/screenshots/make.sh must still get through every screen. The
+          # pictures themselves aren't compared: whiptail and fonts differ
+          # between machines; regenerating them is a PR checklist item.
+          if bash docs/screenshots/make.sh; then
+            git diff --quiet -- docs/screenshots || echo "note: the screenshots differ from the committed ones (expected if the UI changed - regenerate and commit)"
+          else
             touch "$RUNNER_TEMP/failed"
           fi
 
