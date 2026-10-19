@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+# game-mod-sync - sync mod-manager profiles (Gale) to game servers.
+# Two interfaces, same options and behaviour:
+#   game-mod-sync --cli   text menus and prompts (also for scripts: -g GAME -p PROFILE -y)
+#   game-mod-sync --tui   full-screen dialog boxes (needs whiptail or dialog)
+# Without either, DEFAULT_UI from the config file decides (Edit > Default
+# interface), else the text interface. See README.md, or run: game-mod-sync --help
+
+_self=${BASH_SOURCE[0]}
+while [ -L "$_self" ]; do   # follow symlinks (e.g. from ~/.local/bin)
+  _dir=$(cd -P "$(dirname "$_self")" && pwd)
+  _self=$(readlink "$_self")
+  case $_self in /*) ;; *) _self="$_dir/$_self" ;; esac
+done
+APP_DIR=$(cd -P "$(dirname "$_self")" && pwd)
+PROG="game-mod-sync"
+
+# Pick the interface before loading the core (it loads lib/ui-<interface>.sh).
+GMS_UI="" GMS_UI_FROM=""
+for _a in "$@"; do
+  case $_a in
+    --tui) GMS_UI=tui GMS_UI_FROM="--tui" ;;
+    --cli) GMS_UI=text GMS_UI_FROM="--cli" ;;
+  esac
+done
+if [ -z "$GMS_UI" ]; then
+  _cfg="${GMS_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/game-mod-sync}/config"
+  _d=$(sed -n "s/^DEFAULT_UI=[\"']\{0,1\}\([a-z]*\).*/\1/p" "$_cfg" 2>/dev/null | tail -n 1)
+  if [ "$_d" = tui ] && [ -t 2 ]; then
+    GMS_UI=tui GMS_UI_FROM="DEFAULT_UI=tui"
+  elif [ "$_d" = tui ]; then
+    GMS_UI=text GMS_UI_FROM="DEFAULT_UI=tui, but no terminal"   # scripts, cron
+  else
+    GMS_UI=text GMS_UI_FROM="${_d:+DEFAULT_UI=$_d}"; GMS_UI_FROM=${GMS_UI_FROM:-default}
+  fi
+fi
+
+# shellcheck source=lib/core.sh
+. "$APP_DIR/lib/core.sh"
+gms_main "$@"

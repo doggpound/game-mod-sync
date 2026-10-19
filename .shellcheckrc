@@ -1,0 +1,6 @@
+# Files are split into sourced pieces, so cross-file variable use and
+# dynamic `source` paths are expected.
+external-sources=true
+disable=SC1090,SC2034
+# Literal quotes / tildes inside messages and patterns are intentional.
+disable=SC2016,SC2088

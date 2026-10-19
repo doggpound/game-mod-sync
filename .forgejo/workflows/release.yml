@@ -1,0 +1,36 @@
+name: release
+
+# A release for every version:
+# - a push to main with a new VERSION in lib/core.sh tags that commit vX.Y.Z
+#   and releases it (nothing to do by hand); other pushes to main do nothing
+# - pushing a tag vX.Y.Z releases that tag
+# - run by hand (Actions > release > Run workflow) with a tag to (re)build an
+#   existing version's release, e.g. an old one
+# Each release is also published on the GitHub mirror (GH_REPO below).
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v2.7.2); empty = the version in lib/core.sh"
+        required: false
+        default: ""
+
+jobs:
+  release:
+    runs-on: linux-amd64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build and publish the release
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG: ${{ inputs.tag }}
+          # the public GitHub mirror gets the same release (fine-grained token,
+          # Contents read/write on that repo)
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          GH_REPO: doggpound/game-mod-sync
+        run: bash .forgejo/release.sh

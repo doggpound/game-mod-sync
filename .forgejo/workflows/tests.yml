@@ -1,0 +1,47 @@
+name: tests
+
+# Runs tests/run.sh: one test file per plugin (tests/plugins/<kind>/<name>.sh)
+# plus an end-to-end sync, and checks that the README's badges (docs/badges/)
+# match the results. main is protected: changes come in through pull requests,
+# and this check must pass before one can be merged.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: linux-amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tools
+        run: |
+          need=""
+          for t in rsync perl shellcheck; do command -v "$t" >/dev/null || need="$need $t"; done
+          if [ -n "$need" ]; then
+            if command -v sudo >/dev/null && [ "$(id -u)" != 0 ]; then S=sudo; else S=""; fi
+            $S apt-get update -qq && $S apt-get install -y -qq $need >/dev/null
+          fi
+          bash --version | sed -n 1p; rsync --version | sed -n 1p; perl -v | sed -n 2p
+
+      - name: Lint
+        run: shellcheck -x -S warning game-mod-sync game-mod-sync-tui lib/*.sh plugins/*/*.sh .forgejo/release.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh
+
+      - name: Test every plugin
+        run: |
+          if bash tests/run.sh --badges "$RUNNER_TEMP/badges"; then :; else touch "$RUNNER_TEMP/failed"; fi
+
+      - name: Badges up to date
+        run: |
+          # The README's badges are files in docs/badges/, so they show on Forgejo
+          # and on the GitHub mirror. They must match what the tests produce.
+          if ! diff -r docs/badges "$RUNNER_TEMP/badges" >/dev/null 2>&1; then
+            echo "docs/badges/ is out of date - run: tests/run.sh --badges docs/badges, and commit it"
+            diff -r docs/badges "$RUNNER_TEMP/badges" | head -n 20 || true
+            touch "$RUNNER_TEMP/failed"
+          fi
+
+      - name: Result
+        run: if [ -e "$RUNNER_TEMP/failed" ]; then echo "failed - see the steps above"; exit 1; fi
