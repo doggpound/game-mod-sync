@@ -159,7 +159,7 @@ if [ -n "$badges" ]; then
   mkdir -p "$badges"
   # one badge per kind of plugin: "server | AMP 8 | SSH 5" (catch-alls like
   # games/_default last); the README shows these, so new plugins appear by themselves
-  for kind in sources loaders backends games; do
+  for kind in sources loaders backends worlds games; do
     segs=()
     while read -r key; do
       [ -n "$key" ] || continue
@@ -167,7 +167,7 @@ if [ -n "$badges" ]; then
       if [ "$x" = 0 ]; then segs+=("$name $p|#4c1"); else segs+=("$name $x failed|#e05d44"); fi
     done < <(printf '%s\n' "${!f_pass[@]}" | grep "^$kind/" | awk -F/ '{ print ($2 ~ /^_/ ? 1 : 0) "\t" $0 }' | sort | cut -f2)
     [ ${#segs[@]} -gt 0 ] || continue
-    case $kind in sources) g=source ;; loaders) g=loader ;; backends) g=server ;; games) g=game ;; esac
+    case $kind in sources) g=source ;; loaders) g=loader ;; backends) g=server ;; worlds) g=world ;; games) g=game ;; esac
     group_badge "$badges/group-$kind.svg" "$g" "${segs[@]}"
   done
   for key in "${!f_pass[@]}"; do
@@ -181,7 +181,7 @@ if [ -n "$badges" ]; then
   if [ "$failed" = 0 ]; then badge "$badges/tests.svg" tests "$total passed" "#4c1"
   else badge "$badges/tests.svg" tests "$failed of $total failed" "#e05d44"; fi
   core=""; for b in "$badges"/core-*.svg; do [ -f "$b" ] && core="${b##*/} $core"; done   # core-sync, then core-interface
-  groups=""; for kind in sources loaders backends games; do [ -f "$badges/group-$kind.svg" ] && groups+="group-$kind.svg "; done
+  groups=""; for kind in sources loaders backends worlds games; do [ -f "$badges/group-$kind.svg" ] && groups+="group-$kind.svg "; done
   panel "$badges/panel.svg" "Status|version.svg tests.svg $core" "Plugins|$groups"
   echo "badges written to $badges"
 fi

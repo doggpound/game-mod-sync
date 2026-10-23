@@ -23,8 +23,8 @@ gale_init() {
     return
   fi
   # %APPDATA% on Windows, ~/.local/share on Linux, ~/Library/Application Support on macOS.
-  for c in /mnt/*/Users/*/AppData/Roaming/com.kesomannen.gale; do               # WSL
-    [ -d "$c" ] && cands+=("$c")
+  for c in $WIN_USERS_GLOB; do                                                  # WSL
+    [ -d "$c/AppData/Roaming/com.kesomannen.gale" ] && cands+=("$c/AppData/Roaming/com.kesomannen.gale")
   done
   if [ -n "${APPDATA:-}" ] && command -v cygpath >/dev/null 2>&1; then        # Git Bash / Cygwin
     c="$(cygpath -u "$APPDATA")/com.kesomannen.gale"

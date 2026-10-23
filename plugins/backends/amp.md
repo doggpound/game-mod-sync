@@ -67,6 +67,12 @@ still syncs.
 
 Only a substring check is used on the JSON, so there's no `jq` dependency on the server.
 
+**Save folder and world.** For the world download, `amp_saves` reads the same `.kvp` files:
+the game file's `SAVES_amp="ARG SETTING"` names the command-line option that sets the save folder
+(Valheim: `-savedir`, from `App.CommandLineArgs`, relative to the game root) and the AppSettings
+entry that names the world (Valheim: `WorldName`). Values that still hold `{{templates}}` are
+skipped, and the core falls back to the game's usual folder or asks.
+
 **What it does not do.** It never talks to the AMP API or panel and never starts, stops or updates
 instances. Everything is `find` and `grep` over SSH, plus rsync into the chosen folder.
 
@@ -78,6 +84,7 @@ instances. Everything is `find` and `grep` over SSH, plus rsync into the chosen 
 | `amp_default_user` | `amp` |
 | `amp_candidates TARGET MARKER` | `label<TAB>absolute game root` per instance containing `MARKER` |
 | `amp_managed TARGET ROOT SPECS` | `pattern<TAB>reason` per managed file whose AMP setting is on |
+| `amp_saves TARGET ROOT SPEC` | `save folder<TAB>world` for the world download, from the instance's settings |
 
 ## Known limits
 

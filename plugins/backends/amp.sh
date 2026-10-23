@@ -16,6 +16,10 @@
 #   <name>_managed TARGET ROOT SPECS        (optional)
 #       SPECS is the game's MANAGED_<name> value. Print "pattern<TAB>reason"
 #       for each file the server installs itself, so it can be left alone.
+#   <name>_saves TARGET ROOT SPEC           (optional)
+#       SPEC is the game's SAVES_<name> value. Print "save folder<TAB>world":
+#       the folder the game saves in (absolute, or relative to ROOT) and the
+#       world the server runs; either may be empty.
 
 amp_label()        { printf 'CubeCoders AMP'; }
 amp_default_user() { printf 'amp'; }
@@ -57,4 +61,31 @@ amp_managed() {
         done ;;
     esac
   done
+}
+
+# Where the game saves and which world it runs, from the instance's settings.
+# SPEC: "ARG SETTING" - the command-line option that names the save folder
+# (App.CommandLineArgs, e.g. -savedir "Saves") and the AppSettings entry that
+# names the world (e.g. WorldName). Values still holding {{templates}} are
+# skipped.
+amp_saves() {
+  local target=$1 root=$2 arg=${3%% *} setting=${3#* } base=${AMP_INSTANCES_DIR:-.ampdata/instances}
+  local rest inst kvp dir world
+  case $root in */"$base"/*) ;; *) return 0 ;; esac
+  rest=${root#*/"$base"/}
+  inst="${root%%/"$base"/*}/$base/${rest%%/*}"
+  ui_wait "Reading ${rest%%/*}'s AMP settings ..." \
+    rssh "$target" "grep -h -e '^App.CommandLineArgs=' -e '^App.AppSettings=' $(shq "$inst")/*.kvp 2>/dev/null" || true
+  kvp=$WAIT_OUT
+  dir=$(printf '%s\n' "$kvp" | sed -n 's/^App\.CommandLineArgs=//p' | head -n 1 | awk -v a="$arg" '
+    { n = split($0, w, " ")
+      for (i = 1; i < n; i++) if (w[i] == a) {
+        v = w[i + 1]
+        if (v ~ /^"/) { while (v !~ /.."$/ && i + 1 < n) { i++; v = v " " w[i + 1] }; gsub(/"/, "", v) }
+        print v; exit } }')
+  world=$(printf '%s\n' "$kvp" | grep '^App.AppSettings=' | head -n 1 | sed -n "s/.*\"$setting\":\"\\([^\"]*\\)\".*/\\1/p")
+  case $dir in *"{{"*) dir="" ;; esac
+  case $world in *"{{"*) world="" ;; esac
+  [ -n "$dir$world" ] || return 0
+  printf '%s\t%s\n' "$dir" "$world"
 }
