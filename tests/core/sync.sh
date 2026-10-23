@@ -76,3 +76,16 @@ t_dry_run_changes_nothing() {
   assert_file "$S/BepInEx/plugins/Old-RemovedMod/Old.dll"
   assert_no_file "$S/BepInEx/plugins/Azumatt-AzuClock"
 }
+
+t_a_differing_config_that_is_not_a_cfg_file_is_shown() {
+  command -v rsync >/dev/null || { echo "no rsync"; exit 77; }
+  command -v perl >/dev/null || { echo "no perl"; exit 77; }
+  setup_profile_and_server
+  mkdir -p "$P/BepInEx/config/argusmagnus.ServersideQoL" "$S/BepInEx/config/argusmagnus.ServersideQoL"
+  printf 'Throttle:\n  Max: 100\n' >"$P/BepInEx/config/argusmagnus.ServersideQoL/Advanced.yml"
+  printf 'Throttle:\n  Max: 50\n' >"$S/BepInEx/config/argusmagnus.ServersideQoL/Advanced.yml"
+  local out
+  out=$(sync -n -v) || { printf '%s\n' "$out"; fail "dry run failed"; }
+  assert_contains "$out" "Advanced.yml" "output"
+  assert_contains "$out" "Dry run" "output"
+}
