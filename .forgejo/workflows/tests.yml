@@ -26,7 +26,7 @@ jobs:
           bash --version | sed -n 1p; rsync --version | sed -n 1p; perl -v | sed -n 2p
 
       - name: Lint
-        run: shellcheck -x -S warning game-mod-sync lib/*.sh plugins/*/*.sh .forgejo/release.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh docs/screenshots/make.sh
+        run: shellcheck -x -S warning game-mod-sync lib/*.sh plugins/*/*.sh .forgejo/release.sh .forgejo/go-setup.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh docs/screenshots/make.sh
 
       - name: Test every plugin
         run: |
@@ -58,7 +58,8 @@ jobs:
           fi
 
       # Go toolchain, downloaded libraries and build cache, kept between runs:
-      # downloaded again only when the Go version or go.sum changes.
+      # downloaded again only when the Go version (.forgejo/go-setup.sh) or
+      # go.sum changes. New branches start from main's (go-cache.yml).
       - name: Go cache
         uses: actions/cache@v4
         with:
@@ -66,8 +67,11 @@ jobs:
             ~/.cache/gms-go
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: go-1.26.10-${{ hashFiles('go.sum') }}
-          restore-keys: go-1.26.10-
+          key: go-${{ hashFiles('.forgejo/go-setup.sh') }}-${{ hashFiles('go.sum') }}
+          restore-keys: go-${{ hashFiles('.forgejo/go-setup.sh') }}-
+
+      - name: Go toolchain
+        run: bash .forgejo/go-setup.sh
 
       - name: Go version
         env:
@@ -78,13 +82,8 @@ jobs:
         run: |
           # The Go rewrite (docs/DESIGN-GO.md): formatting, vet, tests (with a
           # real SSH/SFTP server inside the tests), and a build for every
-          # platform it's released for. Go 1.26 is the oldest it needs.
-          GOROOT_DIR="$HOME/.cache/gms-go/go1.26.10"
-          if [ ! -x "$GOROOT_DIR/bin/go" ]; then
-            mkdir -p "$GOROOT_DIR"
-            curl -fsSL https://go.dev/dl/go1.26.10.linux-amd64.tar.gz | tar xz -C "$GOROOT_DIR" --strip-components=1
-          fi
-          export PATH="$GOROOT_DIR/bin:$PATH" GOTOOLCHAIN=local CGO_ENABLED=0
+          # platform it's released for.
+          export GOTOOLCHAIN=local CGO_ENABLED=0
           go version
           ok=1
           unformatted=$(gofmt -l cmd internal)
