@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/doggpound/game-mod-sync/internal/backends/amp"
+	"github.com/doggpound/game-mod-sync/internal/configs"
 	"github.com/doggpound/game-mod-sync/internal/games"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/secrets"
@@ -39,6 +40,11 @@ type App struct {
 	Dial func(t state.Target) (*remote.Client, error)
 	// Secrets keeps login passwords; nil = the system's credential store.
 	Secrets secrets.Store
+	// Tags looks up mods' client/server tags; nil = Thunderstore with the usual cache.
+	Tags *configs.Tags
+
+	galeDir string  // Gale's data folder, once found
+	entries []Entry // the profiles listed in the menu
 }
 
 // Entry is one profile that can be synced.
@@ -94,6 +100,7 @@ func (a *App) Entries() ([]Entry, error) {
 	if err != nil {
 		return nil, err
 	}
+	a.galeDir = root
 	profiles, err := gale.List(root)
 	if err != nil {
 		return nil, err
@@ -122,6 +129,7 @@ func (a *App) Main() error {
 	if err != nil {
 		return err
 	}
+	a.entries = entries
 	if len(entries) == 0 {
 		msg := "no profiles with mods found"
 		if a.Opts.Game != "" {
@@ -224,11 +232,16 @@ func (a *App) Sync(e Entry) error {
 		return err
 	}
 	ex := append(append(append(transfer.Excludes{}, g.Excludes...), a.State.Config.ExtraExcludes...), keep...)
-	err = (&FolderSync{
+	fs := &FolderSync{
 		Client: c, Local: p.Dir, Root: t.Root, Dirs: g.SyncDirs, Excludes: ex,
 		KeepBackups: a.State.Config.KeepBackups,
 		DryRun:      a.Opts.DryRun, Yes: a.Opts.Yes, Verbose: a.Opts.Verbose, UI: a.UI,
-	}).Run()
+		Title: fmt.Sprintf("%s / %s  ->  %s on %s", g.Name, p.Name, a.where(t), t.Host),
+	}
+	if x := a.configExtra(e, c, t.Root); x != nil {
+		fs.Extra = x
+	}
+	err = fs.Run()
 	if errors.Is(err, ErrNothingToSync) {
 		return fmt.Errorf("'%s' has %w", p.Name, err)
 	}
@@ -365,7 +378,7 @@ func Run(args []string, u ui.UI, out io.Writer, version string) error {
 	fs := flag.NewFlagSet("game-mod-sync", flag.ContinueOnError)
 	fs.SetOutput(out)
 	var o Options
-	var list, gamesFlag, config, cli, tui bool
+	var list, gamesFlag, config, cli, tui, refresh bool
 	fs.StringVar(&o.Game, "g", "", "only this game (Gale's folder name, e.g. valheim)")
 	fs.StringVar(&o.Game, "game", "", "same as -g")
 	fs.StringVar(&o.Profile, "p", "", "this profile (skips the menu)")
@@ -376,6 +389,7 @@ func Run(args []string, u ui.UI, out io.Writer, version string) error {
 	fs.BoolVar(&o.Yes, "yes", false, "same as -y")
 	fs.BoolVar(&o.Verbose, "v", false, "list every file, not just a per-mod summary")
 	fs.BoolVar(&o.Setup, "setup", false, "(re)pick the server folder for the chosen profile")
+	fs.BoolVar(&refresh, "refresh-tags", false, "look up every mod's client/server tags on Thunderstore again")
 	fs.BoolVar(&list, "list", false, "show where each profile syncs to and exit")
 	fs.BoolVar(&gamesFlag, "games", false, "show detected games and what gets synced for each")
 	fs.BoolVar(&config, "config", false, "print where settings are stored and exit")
@@ -399,6 +413,12 @@ func Run(args []string, u ui.UI, out io.Writer, version string) error {
 		u.Say("Read the settings of the bash version from " + st.Dir + " (it keeps its own files).")
 	}
 	switch {
+	case refresh:
+		entries, err := a.Entries()
+		if err != nil {
+			return err
+		}
+		return a.RefreshTags(entries)
 	case config:
 		fmt.Fprintln(out, a.locations())
 		return nil

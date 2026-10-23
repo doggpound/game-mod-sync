@@ -16,17 +16,21 @@ type Loader struct {
 	Excludes   []string // never sent or deleted inside SyncDirs
 	ConfigDirs []string // offered per file, never deleted
 	ConfigSkip []string // never offered from ConfigDirs
-	detect     func(profileDir string) bool
+	// ConfigOwners returns "plugin id -> mod folder" for the mods in a sync
+	// folder, to tell which mod a config file belongs to; may be nil.
+	ConfigOwners func(syncDir string) map[string]string
+	detect       func(profileDir string) bool
 }
 
 // All loaders, in the order they're tried.
 var All = []Loader{
 	{
 		Name: "bepinex", Label: "BepInEx",
-		SyncDirs:   []string{"BepInEx/plugins"},
-		Excludes:   []string{"MMHOOK/"},
-		ConfigDirs: []string{"BepInEx/config"},
-		ConfigSkip: []string{"/BepInEx.cfg", "*.dat"},
+		SyncDirs:     []string{"BepInEx/plugins"},
+		Excludes:     []string{"MMHOOK/"},
+		ConfigDirs:   []string{"BepInEx/config"},
+		ConfigSkip:   []string{"/BepInEx.cfg", "*.dat"},
+		ConfigOwners: BepInExOwners,
 		detect: func(dir string) bool {
 			return isDir(filepath.Join(dir, "BepInEx", "core")) || isDir(filepath.Join(dir, "BepInEx", "plugins"))
 		},

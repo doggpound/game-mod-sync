@@ -21,6 +21,7 @@ func (a *App) Edit(e Entry) error {
 				"Forget this profile's server",
 				"Forget the saved password for this profile's server",
 				"Show file locations",
+				"Refresh mod tags (client / server, from Thunderstore)",
 			},
 			Help: `Edit
 
@@ -28,7 +29,9 @@ Change this profile's server   run the first-time setup again
 Forget this profile's server   remove the setup; the next sync asks again
 Forget the saved password      remove it from the system's password store;
                                the next connection asks for it
-Show file locations            where settings and your own game files are`,
+Show file locations            where settings and your own game files are
+Refresh mod tags               look up every mod's client/server tags on
+                               Thunderstore again (they're cached otherwise)`,
 		})
 		if err != nil {
 			return err
@@ -77,6 +80,14 @@ Show file locations            where settings and your own game files are`,
 			a.UI.OK("No password is saved for " + t.User + "@" + t.Host + " now.")
 		case 3:
 			a.UI.Say(a.locations())
+		case 4:
+			entries := a.entries
+			if len(entries) == 0 {
+				entries = []Entry{e}
+			}
+			if err := a.RefreshTags(entries); err != nil {
+				a.UI.Warn(err.Error())
+			}
 		}
 	}
 }

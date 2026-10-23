@@ -9,10 +9,12 @@
 package gale
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 )
 
 // Name and Label identify the source in settings and menus.
@@ -100,4 +102,29 @@ func List(root string) ([]Profile, error) {
 		return out[i].Name < out[j].Name
 	})
 	return out, nil
+}
+
+// ModTags reads the Thunderstore packages Gale has looked up for a game
+// (<root>/<game>/thunderstore_cache.json), as "Author-Name" -> "cat|cat", so
+// client/server checks work offline for mods Gale knows.
+func ModTags(root, game string) map[string]string {
+	out := map[string]string{}
+	f, err := os.Open(filepath.Join(root, game, "thunderstore_cache.json"))
+	if err != nil {
+		return out
+	}
+	defer f.Close()
+	var pkgs []struct {
+		FullName   string   `json:"full_name"`
+		Categories []string `json:"categories"`
+	}
+	if json.NewDecoder(f).Decode(&pkgs) != nil {
+		return out
+	}
+	for _, p := range pkgs {
+		if p.FullName != "" {
+			out[p.FullName] = strings.Join(p.Categories, "|")
+		}
+	}
+	return out
 }
