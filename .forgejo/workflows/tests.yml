@@ -70,6 +70,11 @@ jobs:
           restore-keys: go-1.26.10-
 
       - name: Go version
+        env:
+          # A Go module proxy (e.g. a local caching registry) can be set as the
+          # repository variable GOPROXY (Settings > Actions > Variables), so its
+          # address isn't in this public file. Unset = Go's default.
+          GOPROXY: ${{ vars.GOPROXY }}
         run: |
           # The Go rewrite (docs/DESIGN-GO.md): formatting, vet, tests (with a
           # real SSH/SFTP server inside the tests), and a build for every
