@@ -18,8 +18,8 @@ config handling, world download) unless this page says otherwise.
 | Start | `game-mod-sync` in a WSL terminal | Double-click it, or `game-mod-sync` in any terminal |
 | SSH keys | `ssh-copy-id` by hand | Asked once for the password; the program makes and installs a key |
 | Interfaces | text (`--cli`) and whiptail (`--tui`) | text and full screen (Bubble Tea), same options |
-| Settings | `~/.config/game-mod-sync/config` (shell) and `targets.tsv` | Same folder on Linux; `%APPDATA%\game-mod-sync` on Windows; TOML files. The old files are read once and converted |
-| Your own plugins | Any `.sh` source, loader, server type or game | Game files (`games/<id>.toml`) as before. Sources, loaders, server types and world formats are built in; "Other (SSH)" still covers any server |
+| Settings | `~/.config/game-mod-sync/config` (shell) and `targets.tsv` | Same folder on Linux; `%APPDATA%\game-mod-sync` on Windows; `config.toml` and `targets.toml`. The bash files are read the first time and left in place for bash; profiles set up with bash later are picked up too |
+| Your own plugins | Any `.sh` source, loader, server type or game | Game files (`plugins/games/<id>.toml` in the config folder) as before, now TOML. Sources, loaders, server types and world formats are built in; "Other (SSH)" still covers any server |
 
 ## Layout
 
@@ -116,6 +116,26 @@ the test, so they need no network, no `ssh` program and no fake shell, and also 
 The bash tests' scenarios (sync, backups, excludes, server-managed files, configs, world download)
 are ported one by one.
 
+## Adding a game
+
+Games are TOML files, not code. The built-in ones are `internal/games/builtin/*.toml` (packed
+into the program when it's built); `_default.toml` describes every setting. A file is read on top
+of the mod loader's defaults and `_default.toml`, so it only lists what differs:
+
+```toml
+# internal/games/builtin/lethal-company.toml (named after Gale's folder for the game)
+name = "Lethal Company"
+server_match = "lethal|1966720"
+after_sync = "Restart the server in AMP."
+```
+
+- **For yourself, right away:** put the file in the config folder's `plugins/games/` folder.
+  It's used the next time the program starts, nothing to build. It can also change a built-in
+  game's settings (only the ones it lists).
+- **For everyone:** a pull request that adds the file to `internal/games/builtin/`. A test loads
+  every built-in file, so a mistake fails the checks instead of reaching users. It ships in the
+  next release.
+
 ## Building it yourself
 
 `go build -o dist/game-mod-sync ./cmd/game-mod-sync` (add `.exe` on Windows). Always give `-o`: a
@@ -129,8 +149,13 @@ Each phase is its own pull request and leaves the bash version untouched.
 1. **Core transfer:** module, SSH, the testserver, hashing (commands or SFTP only, with the
    manifest), compare, apply with backups; a bare `game-mod-sync sync` for one folder. CI builds
    all six platforms.
-2. **Profiles and servers:** Gale, BepInEx, game files, AMP and SSH server types, first-time setup,
-   targets, server-managed files, the text interface for a full mod sync, settings migration.
+2. **Profiles and servers**, in two pull requests:
+   - 2a: settings and migration from the bash files, Gale, BepInEx, game files, the text interface
+     with the main menu and the bash version's options, syncing a set-up profile including
+     server-managed files (AMP's settings are read over SFTP).
+   - 2b: first-time setup (server type, address and port, SSH or SFTP-only login, the password in
+     the system's credential store), finding the game folder (AMP over SSH or SFTP; any server by
+     typing it), Edit menu basics.
 3. **Configs:** comparison, owners from DLLs, client/server tags (Thunderstore), the checklist.
 4. **Full screen:** Bubble Tea screens for everything above, Edit menu, help.
 5. **World download.**

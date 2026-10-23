@@ -57,13 +57,34 @@ jobs:
             touch "$RUNNER_TEMP/failed"
           fi
 
+      # Go toolchain, downloaded libraries and build cache, kept between runs:
+      # downloaded again only when the Go version or go.sum changes.
+      - name: Go cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/gms-go
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-1.26.10-${{ hashFiles('go.sum') }}
+          restore-keys: go-1.26.10-
+
       - name: Go version
+        env:
+          # A Go module proxy (e.g. a local caching registry) can be set as the
+          # repository variable GOPROXY (Settings > Actions > Variables), so its
+          # address isn't in this public file. Unset = Go's default.
+          GOPROXY: ${{ vars.GOPROXY }}
         run: |
           # The Go rewrite (docs/DESIGN-GO.md): formatting, vet, tests (with a
           # real SSH/SFTP server inside the tests), and a build for every
           # platform it's released for. Go 1.26 is the oldest it needs.
-          curl -fsSL https://go.dev/dl/go1.26.10.linux-amd64.tar.gz | tar xz -C "$RUNNER_TEMP"
-          export PATH="$RUNNER_TEMP/go/bin:$PATH" GOTOOLCHAIN=local CGO_ENABLED=0
+          GOROOT_DIR="$HOME/.cache/gms-go/go1.26.10"
+          if [ ! -x "$GOROOT_DIR/bin/go" ]; then
+            mkdir -p "$GOROOT_DIR"
+            curl -fsSL https://go.dev/dl/go1.26.10.linux-amd64.tar.gz | tar xz -C "$GOROOT_DIR" --strip-components=1
+          fi
+          export PATH="$GOROOT_DIR/bin:$PATH" GOTOOLCHAIN=local CGO_ENABLED=0
           go version
           ok=1
           unformatted=$(gofmt -l cmd internal)

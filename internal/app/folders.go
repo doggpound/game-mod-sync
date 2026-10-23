@@ -6,7 +6,6 @@ package app
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
+	"github.com/doggpound/game-mod-sync/internal/ui"
 )
 
 // BackupsDir is where replaced and deleted files go, inside the game folder.
@@ -29,8 +29,8 @@ type FolderSync struct {
 	KeepBackups int  // backups to keep on the server; 0 = none made
 	DryRun      bool // show what would change, change nothing
 	Yes         bool // don't ask before applying
-	Out         io.Writer
-	Confirm     func(question string) bool
+	Verbose     bool // list every file, not just a per-mod summary
+	UI          ui.UI
 	Now         func() time.Time // for tests; nil = time.Now
 }
 
@@ -62,10 +62,10 @@ func (f *FolderSync) Run() error {
 			return err
 		}
 		if len(entries) == 0 {
-			fmt.Fprintf(f.Out, "warning: %s is empty here - skipping it so the server's copy isn't wiped\n", d)
+			f.UI.Warn(d + " is empty here - skipping it so the server's copy isn't wiped")
 			continue
 		}
-		fmt.Fprintf(f.Out, "==> Comparing with the server (checksums): %s\n", d)
+		f.UI.Info("Comparing with the server (checksums): " + d)
 		lt, err := transfer.LocalTree(local)
 		if err != nil {
 			return err
@@ -76,11 +76,19 @@ func (f *FolderSync) Run() error {
 		}
 		p := transfer.Compare(lt, st, f.Excludes)
 		if len(f.Dirs) > 1 {
-			fmt.Fprintf(f.Out, "  %s/\n", d)
+			f.UI.Say("  " + d + "/")
+		}
+		if f.Verbose {
+			for _, x := range p.Send {
+				f.UI.Say("     send    " + x)
+			}
+			for _, x := range p.Delete {
+				f.UI.Say("     delete  " + x)
+			}
 		}
 		for _, c := range p.Summary() {
 			mark := map[string]string{"new": "+ new    ", "updated": "~ updated", "removed": "- removed"}[c.Kind]
-			fmt.Fprintf(f.Out, "   %s  %s\n", mark, c.Mod)
+			f.UI.Say("   " + mark + "  " + c.Mod)
 		}
 		send += len(p.Send)
 		del += len(p.Delete)
@@ -96,17 +104,17 @@ func (f *FolderSync) Run() error {
 		}
 	}
 	if !changes {
-		fmt.Fprintln(f.Out, "Already in sync - nothing to do.")
+		f.UI.OK("Already in sync - nothing to do.")
 		return nil
 	}
 	what := fmt.Sprintf("%d file(s) to send, %d to delete", send, del)
-	fmt.Fprintln(f.Out, what+".")
+	f.UI.Say(what + ".")
 	if f.DryRun {
-		fmt.Fprintln(f.Out, "Dry run - nothing changed.")
+		f.UI.OK("Dry run - nothing changed.")
 		return nil
 	}
-	if !f.Yes && (f.Confirm == nil || !f.Confirm("Apply these changes to the server? ("+what+")")) {
-		fmt.Fprintln(f.Out, "Cancelled - nothing changed.")
+	if !f.Yes && !f.UI.Confirm("Apply these changes to the server? ("+what+")", false) {
+		f.UI.Say("Cancelled - nothing changed.")
 		return nil
 	}
 
@@ -130,19 +138,19 @@ func (f *FolderSync) Run() error {
 		if f.KeepBackups > 0 {
 			a.Backup = path.Join(backups, ts, fp.dir)
 		}
-		fmt.Fprintf(f.Out, "==> Syncing %s\n", fp.dir)
+		f.UI.Info("Syncing " + fp.dir)
 		if err := a.Run(fp.plan); err != nil {
 			return fmt.Errorf("syncing %s: %w", fp.dir, err)
 		}
 	}
 	if f.KeepBackups > 0 {
 		if err := transfer.PruneBackups(f.Client.SFTP(), backups, f.KeepBackups); err != nil {
-			fmt.Fprintf(f.Out, "warning: tidying old backups: %v\n", err)
+			f.UI.Warn(fmt.Sprintf("tidying old backups: %v", err))
 		}
 	}
-	fmt.Fprintln(f.Out, "Synced.")
+	f.UI.OK("Synced.")
 	if f.KeepBackups > 0 {
-		fmt.Fprintf(f.Out, "Previous files: %s\n", path.Join(backups, ts))
+		f.UI.Say("Previous files: " + path.Join(backups, ts))
 	}
 	return nil
 }
