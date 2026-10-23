@@ -12,6 +12,7 @@ import (
 	"github.com/doggpound/game-mod-sync/internal/backends/amp"
 	"github.com/doggpound/game-mod-sync/internal/games"
 	"github.com/doggpound/game-mod-sync/internal/remote"
+	"github.com/doggpound/game-mod-sync/internal/secrets"
 	"github.com/doggpound/game-mod-sync/internal/sources/gale"
 	"github.com/doggpound/game-mod-sync/internal/state"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
@@ -36,6 +37,8 @@ type App struct {
 	Version string
 	// Dial connects to a target's server; nil = SSH with the usual logins.
 	Dial func(t state.Target) (*remote.Client, error)
+	// Secrets keeps login passwords; nil = the system's credential store.
+	Secrets secrets.Store
 }
 
 // Entry is one profile that can be synced.
@@ -170,11 +173,20 @@ Afterwards you come back here.`,
 			return err
 		}
 		switch key {
-		case "Edit", "Download":
-			a.UI.Say(key + " isn't in the Go version yet - use the bash version for now.")
+		case "Edit":
+			if err := a.Edit(entries[i]); errors.Is(err, ui.ErrExit) {
+				return nil
+			} else if err != nil && !errors.Is(err, ui.ErrBack) {
+				a.UI.Warn(err.Error())
+			}
+			continue
+		case "Download":
+			a.UI.Say("World download isn't in the Go version yet - use the bash version for now.")
 			continue
 		}
-		if err := a.Sync(entries[i]); err != nil {
+		if err := a.Sync(entries[i]); errors.Is(err, ui.ErrExit) {
+			return nil
+		} else if err != nil {
 			a.UI.Warn(err.Error())
 		}
 		a.Opts.Setup = false
@@ -185,13 +197,23 @@ Afterwards you come back here.`,
 func (a *App) Sync(e Entry) error {
 	g, p := e.Game, e.Profile
 	t, ok := a.State.Target(e.Source, p.Game, p.Name)
+	var c *remote.Client
 	if !ok || a.Opts.Setup {
-		return fmt.Errorf("%s / %s has no server set up yet. Setting one up comes in a later step of the Go version; "+
-			"for now set it up with the bash version (its settings are read from the same folder)", g.Name, p.Name)
-	}
-	c, err := a.dial(t)
-	if err != nil {
-		return err
+		if a.Opts.Yes && !ok {
+			return fmt.Errorf("%s / %s has no server set up yet - run it once without -y to set it up", g.Name, p.Name)
+		}
+		var err error
+		if t, c, err = a.Setup(e); err != nil {
+			if errors.Is(err, ui.ErrBack) {
+				return nil // backed out: nothing saved
+			}
+			return err
+		}
+	} else {
+		var err error
+		if c, err = a.dial(t); err != nil {
+			return err
+		}
 	}
 	defer c.Close()
 
@@ -279,14 +301,63 @@ func (a *App) dial(t state.Target) (*remote.Client, error) {
 	if port == 0 {
 		port = 22
 	}
-	auth, _ := remote.Auth(remote.DefaultKeyFiles(), func() (string, error) {
-		return a.UI.Password(fmt.Sprintf("Password for %s@%s", t.User, t.Host))
-	})
+	store := a.Secrets
+	if store == nil {
+		store = secrets.System{}
+	}
+	account := fmt.Sprintf("%s@%s:%d", t.User, t.Host, port)
+	pw := &passwords{ui: a.UI, store: store, account: account,
+		question: fmt.Sprintf("Password for %s@%s", t.User, t.Host)}
+	auth, closeAgent := remote.Auth(remote.DefaultKeyFiles(), pw.next)
+	defer closeAgent()
 	a.UI.Info("Connecting to " + t.User + "@" + t.Host + " ...")
-	return remote.Dial(remote.Options{
+	c, err := remote.Dial(remote.Options{
 		Host: t.Host, Port: port, User: t.User, Auth: auth,
 		HostKey: hk, HostKeyAlgorithms: remote.KnownAlgorithms(kh, t.Host, port),
 	})
+	if err != nil {
+		return nil, err
+	}
+	pw.offerToSave()
+	return c, nil
+}
+
+// passwords answers the server's password questions: the saved password
+// first, then asking. After a login that needed a typed password, it offers
+// to save it in the system's credential store.
+type passwords struct {
+	ui         ui.UI
+	store      secrets.Store
+	account    string
+	question   string
+	triedSaved bool
+	typed      string
+}
+
+func (p *passwords) next() (string, error) {
+	if !p.triedSaved {
+		p.triedSaved = true
+		if s, err := p.store.Get(p.account); err == nil && s != "" {
+			return s, nil
+		}
+	}
+	s, err := p.ui.Password(p.question)
+	p.typed = s
+	return s, err
+}
+
+func (p *passwords) offerToSave() {
+	if p.typed == "" {
+		return
+	}
+	if !p.ui.Confirm("Save the password on this computer (in the system's password store)?", true) {
+		return
+	}
+	if err := p.store.Set(p.account, p.typed); err != nil {
+		p.ui.Warn(fmt.Sprintf("couldn't save it (%v) - it will be asked each time", err))
+		return
+	}
+	p.ui.OK("Saved - it won't be asked again.")
 }
 
 // Run parses the command line (the same options as the bash version) and runs.
@@ -329,8 +400,7 @@ func Run(args []string, u ui.UI, out io.Writer, version string) error {
 	}
 	switch {
 	case config:
-		fmt.Fprintf(out, "config:   %s\ntargets:  %s\ngames:    %s\n",
-			filepath.Join(st.Dir, "config.toml"), filepath.Join(st.Dir, "targets.toml"), a.userGames())
+		fmt.Fprintln(out, a.locations())
 		return nil
 	case list:
 		if len(st.Targets) == 0 {

@@ -45,8 +45,10 @@ func Auth(keyFiles []string, password func() (string, error)) ([]ssh.AuthMethod,
 		methods = append(methods, ssh.PublicKeys(signers...))
 	}
 	if password != nil {
+		// Retried, so a saved password that stopped working is followed by
+		// asking (password returns the saved one first, then asks).
 		methods = append(methods,
-			ssh.PasswordCallback(password),
+			ssh.RetryableAuthMethod(ssh.PasswordCallback(password), 3),
 			ssh.KeyboardInteractive(func(_, _ string, questions []string, echos []bool) ([]string, error) {
 				answers := make([]string, len(questions))
 				for i := range questions {

@@ -137,7 +137,7 @@ func (t *Text) Confirm(q string, defYes bool) bool {
 	fmt.Fprintf(t.out, "%s %s ", q, hint)
 	a, err := t.line()
 	if err != nil {
-		return false
+		return defYes // no answer (input ended): the default, which is the safe choice
 	}
 	switch strings.ToLower(a) {
 	case "y", "yes":
