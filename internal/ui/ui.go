@@ -1,0 +1,47 @@
+// Package ui is how game-mod-sync talks to the person using it. The app never
+// prints or reads directly; it calls a UI, so the same flow works in the text
+// interface (ui/text) and the full-screen one (phase 4).
+package ui
+
+import "errors"
+
+// ErrBack is returned when the person goes back (Back button, b).
+var ErrBack = errors.New("back")
+
+// ErrExit is returned when the person exits (Exit button, x or q).
+var ErrExit = errors.New("exit")
+
+// Key is a row key in a menu: pressed on a row, it returns Name for that row
+// (e.g. 'e' Edit, 'd' Download).
+type Key struct {
+	Letter rune
+	Name   string
+}
+
+// Menu is a list to pick one row from.
+type Menu struct {
+	Title    string // heading, e.g. "Main menu"
+	Question string
+	Rows     []string
+	Keys     []Key  // row keys
+	Help     string // shown on h / H
+	NoBack   bool   // main menu: Exit instead of Back
+}
+
+// UI is everything the app asks of an interface.
+type UI interface {
+	Info(msg string) // something is happening: "Comparing ..."
+	Say(msg string)  // plain text
+	OK(msg string)   // a result
+	Warn(msg string) // a warning
+
+	// Choose returns the picked row (0-based) and, if a row key was used,
+	// its Name. ErrBack and ErrExit when the person leaves.
+	Choose(m Menu) (row int, key string, err error)
+	// Confirm asks a yes/no question; yes is the default when defYes.
+	Confirm(question string, defYes bool) bool
+	// Ask asks for a line of text; def is offered as the answer. ErrBack on b.
+	Ask(question, def string) (string, error)
+	// Password asks without showing what's typed.
+	Password(question string) (string, error)
+}

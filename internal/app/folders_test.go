@@ -15,6 +15,7 @@ import (
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/testserver"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
+	"github.com/doggpound/game-mod-sync/internal/ui/text"
 )
 
 // Both kinds of server: one that runs commands, and an SFTP-only game host.
@@ -47,6 +48,7 @@ type setup struct {
 	local  string // profile
 	root   string // game folder on the server
 	out    *bytes.Buffer
+	in     *strings.Reader // typed answers
 }
 
 // newSetup: a profile with two mods, and a server game folder with an older
@@ -75,11 +77,15 @@ func newSetup(t *testing.T, opts []testserver.Option) *setup {
 
 func (s *setup) sync(t *testing.T, change func(*FolderSync)) error {
 	t.Helper()
+	if s.in == nil {
+		s.in = strings.NewReader("")
+	}
 	f := &FolderSync{
+		UI:     text.New(s.in, s.out),
 		Client: s.client, Local: s.local, Root: s.root,
 		Dirs:        []string{"BepInEx/plugins"},
 		Excludes:    transfer.Excludes{"MMHOOK/"},
-		KeepBackups: 5, Yes: true, Out: s.out,
+		KeepBackups: 5, Yes: true,
 		Now: func() time.Time { return time.Date(2026, 10, 23, 12, 0, 0, 0, time.UTC) },
 	}
 	if change != nil {
@@ -159,16 +165,13 @@ func TestSyncDryRunChangesNothing(t *testing.T) {
 
 func TestSyncAsksAndCanBeCancelled(t *testing.T) {
 	s := newSetup(t, nil)
-	var asked string
-	err := s.sync(t, func(f *FolderSync) {
-		f.Yes = false
-		f.Confirm = func(q string) bool { asked = q; return false }
-	})
+	s.in = strings.NewReader("n\n")
+	err := s.sync(t, func(f *FolderSync) { f.Yes = false })
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(asked, "2 file(s) to send, 1 to delete") {
-		t.Errorf("question: %q", asked)
+	if !strings.Contains(s.out.String(), "Apply these changes to the server? (2 file(s) to send, 1 to delete) [y/N]") {
+		t.Errorf("question not asked:\n%s", s.out)
 	}
 	if exists(filepath.Join(s.root, "BepInEx", "plugins", "Azumatt-AzuClock")) {
 		t.Error("cancelled, but the server changed")

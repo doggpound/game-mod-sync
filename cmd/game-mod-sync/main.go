@@ -1,17 +1,18 @@
 // game-mod-sync (Go version, in progress - see docs/DESIGN-GO.md).
 //
-// Phase 1 has one command that syncs folders to a server:
+// Without a command it's the program: the profile menu, or one profile with
+// -p, with the bash version's options. Profiles are set up with the bash
+// version for now; config files, the full-screen interface and world
+// download come in later phases.
+//
+// "sync" syncs any folders to a server, without profiles or settings:
 //
 //	game-mod-sync sync --host game.example.com --user amp \
 //	    --local /path/to/profile --root /path/to/game/on/server \
 //	    [--dir BepInEx/plugins] [--exclude MMHOOK/] [-n] [-y]
-//
-// The full program (profiles, menus, configs, worlds) is still the bash
-// version in this repo.
 package main
 
 import (
-	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -19,11 +20,10 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/term"
-
 	"github.com/doggpound/game-mod-sync/internal/app"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
+	"github.com/doggpound/game-mod-sync/internal/ui/text"
 )
 
 // version is set when releases are built: -ldflags "-X main.version=1.0.0".
@@ -37,33 +37,30 @@ func main() {
 }
 
 func run(args []string, in io.Reader, out io.Writer) error {
-	if len(args) == 0 {
-		usage(out)
-		return nil
+	if len(args) > 0 {
+		switch args[0] {
+		case "sync":
+			return runSync(args[1:], in, out)
+		case "version", "--version", "-V":
+			fmt.Fprintln(out, "game-mod-sync", version)
+			return nil
+		case "help", "--help", "-h":
+			usage(out)
+			return app.Run([]string{"-h"}, text.New(in, out), out, version)
+		}
 	}
-	switch args[0] {
-	case "sync":
-		return runSync(args[1:], in, out)
-	case "version", "--version", "-V":
-		fmt.Fprintln(out, "game-mod-sync", version)
-		return nil
-	case "help", "--help", "-h":
-		usage(out)
-		return nil
-	}
-	return fmt.Errorf("unknown command %q (see game-mod-sync help)", args[0])
+	return app.Run(args, text.New(in, out), out, version)
 }
 
 func usage(out io.Writer) {
-	fmt.Fprintf(out, `game-mod-sync %s (Go version, in progress)
+	fmt.Fprintf(out, `game-mod-sync %s (Go version, in progress) - sync mod-manager profiles to game servers
 
 Usage:
-  game-mod-sync sync --host HOST --user USER --local FOLDER --root FOLDER [options]
+  game-mod-sync [options]        the profile menu, or one profile with -p
+  game-mod-sync sync [options]   sync folders without profiles (see sync -h)
   game-mod-sync version
 
-sync makes folders on the server match the same folders here, by content.
-Replaced and deleted files are kept in <root>/.mod-sync-backups/<time>/.
-Run "game-mod-sync sync -h" for its options.
+Options:
 `, version)
 }
 
@@ -106,12 +103,17 @@ func runSync(args []string, in io.Reader, out io.Writer) error {
 		keys = remote.DefaultKeyFiles()
 	}
 
-	p := &prompter{in: bufio.NewReader(in), out: out}
-	hk, err := remote.HostKeys(*knownHosts, p.trust)
+	u := text.New(in, out)
+	hk, err := remote.HostKeys(*knownHosts, func(host, fp string) bool {
+		u.Say(fmt.Sprintf("First connection to %s. Its key fingerprint is\n  %s", host, fp))
+		return u.Confirm("Trust this server?", false)
+	})
 	if err != nil {
 		return err
 	}
-	auth, closeAgent := remote.Auth(keys, p.password(*user, *host))
+	auth, closeAgent := remote.Auth(keys, func() (string, error) {
+		return u.Password(fmt.Sprintf("Password for %s@%s", *user, *host))
+	})
 	defer closeAgent()
 	c, err := remote.Dial(remote.Options{
 		Host: *host, Port: *port, User: *user, Auth: auth,
@@ -131,42 +133,6 @@ func runSync(args []string, in io.Reader, out io.Writer) error {
 		KeepBackups: *keep,
 		DryRun:      *dry,
 		Yes:         *yes,
-		Out:         out,
-		Confirm:     p.confirm,
+		UI:          u,
 	}).Run()
-}
-
-// prompter asks questions on the terminal (or reads answers from in).
-type prompter struct {
-	in  *bufio.Reader
-	out io.Writer
-}
-
-func (p *prompter) line(q string) string {
-	fmt.Fprint(p.out, q)
-	s, _ := p.in.ReadString('\n')
-	return strings.TrimSpace(s)
-}
-
-func (p *prompter) confirm(q string) bool {
-	a := strings.ToLower(p.line(q + " [y/N] "))
-	return a == "y" || a == "yes"
-}
-
-func (p *prompter) trust(host, fingerprint string) bool {
-	fmt.Fprintf(p.out, "First connection to %s. Its key fingerprint is\n  %s\n", host, fingerprint)
-	return p.confirm("Trust this server?")
-}
-
-func (p *prompter) password(user, host string) func() (string, error) {
-	return func() (string, error) {
-		q := fmt.Sprintf("Password for %s@%s: ", user, host)
-		if f, ok := os.Stdin.Fd(), true; ok && term.IsTerminal(int(f)) {
-			fmt.Fprint(p.out, q)
-			b, err := term.ReadPassword(int(f))
-			fmt.Fprintln(p.out)
-			return string(b), err
-		}
-		return p.line(q), nil
-	}
 }

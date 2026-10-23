@@ -3,6 +3,7 @@ module github.com/doggpound/game-mod-sync
 go 1.26.0
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/Microsoft/go-winio v0.6.4
 	github.com/gliderlabs/ssh v0.3.8
 	github.com/pkg/sftp v1.13.11

@@ -1,0 +1,24 @@
+# Valheim (BepInExPack_Valheim). Steam dedicated server app id 896660.
+name = "Valheim"
+# MMHOOK/                        generated on the server by HookGenPatcher at startup
+# Valheim.DisplayBepInExInfo.dll ships with the server's BepInEx pack, not with Gale profiles
+excludes = ["MMHOOK/", "Valheim.DisplayBepInExInfo.dll"]
+server_match = "valheim|896660"
+
+# Add-ons the AMP Valheim template installs itself when its option is on
+# ("Install ValheimPlus" = setting valheim_plus_install). Offered as "leave alone".
+[managed]
+amp = ["valheim_plus_install=ValheimPlus.dll"]
+
+# World download: worlds are folders of chunks. AMP starts the server with
+# -savedir "Saves" -world "{{WorldName}}"; the dedicated server's own default
+# is ~/.config/unity3d/IronGate/Valheim.
+[worlds]
+format = "valheim"
+server_saves = ".config/unity3d/IronGate/Valheim"
+server_worlds = "worlds_local"
+local_windows = "AppData/LocalLow/IronGate/Valheim/worlds_local"
+local_home = ".config/unity3d/IronGate/Valheim/worlds_local"
+note = "Your character (inventory, skills) is saved on this computer: what it gains or loses in the copy comes along to the server. Test with a spare character."
+[worlds.saves]
+amp = "-savedir WorldName"
