@@ -1,6 +1,6 @@
 # Design
 
-`game-mod-sync` connects four kinds of plugins. Each is a small file, so adding support for
+`game-mod-sync` connects five kinds of plugins. Each is a small file, so adding support for
 something new means adding a file, not changing the core.
 
 ```
@@ -10,10 +10,12 @@ plugins/loaders/<name>.sh    where a mod loader keeps mods   bepinex
 plugins/games/<id>.conf      game-specific settings          _default, valheim
 plugins/backends/<name>.sh   how to find the game folder     amp, ssh
                              on a type of server
+plugins/worlds/<name>.sh     how a game saves a world        valheim, files
+                             (world download only)
 ```
 
-Plugins are found automatically: every `*.sh` in `plugins/sources/`, `plugins/loaders/` and
-`plugins/backends/` is loaded. Server types are listed alphabetically, with `ssh` (the catch-all) always last.
+Plugins are found automatically: every `*.sh` in `plugins/sources/`, `plugins/loaders/`,
+`plugins/backends/` and `plugins/worlds/` is loaded. Server types are listed alphabetically, with `ssh` (the catch-all) always last.
 
 **Your own plugins** go in `~/.config/game-mod-sync/plugins/` with the same folders. They
 are loaded together with the repo's. A file with the same name as a repo plugin replaces it
@@ -122,6 +124,45 @@ Some server types install mods themselves. For example, AMP's Valheim template h
 
 Items are kept as fields separated by `\x1f`, not tabs: `read` merges consecutive tabs, which
 shifts fields when one is empty.
+
+## World download (`lib/worlds.sh`)
+
+A one-way copy of a world from a profile's server into this computer's saves, so mod updates can
+be tried on a copy before they're synced. Nothing on the server is written. Entry points: **D** on
+a profile in the main menu (`UI_KEYS="e:Edit d:Download"`), or `-p PROFILE --download-world`
+(`--world NAME` picks the world; `-y` alone takes the one the server runs; `-n` stops after the
+summary). The core knows no game's save layout: a **world format** plugin describes it, and the game
+file says which format and where.
+
+| Piece | Gives |
+|---|---|
+| World format (`plugins/worlds/<f>.sh`) | `<f>_list_sh` (shell code listing worlds + details), `<f>_paths WORLD` (names in the worlds folder that make it up), `<f>_stamp_sh WORLD` (shell code printing what changes with every save; empty = no complete save) |
+| Game file | `WORLD_FORMAT`, `SERVER_SAVES`, `SERVER_WORLDS`, `SAVES_<backend>`, `LOCAL_WORLDS_WIN`, `LOCAL_WORLDS_HOME`, `WORLD_NOTE` (see `plugins/games/_default.conf`) |
+| Server type (optional) | `<name>_saves TARGET ROOT SPEC`: save folder and running world (AMP: `-savedir` from `App.CommandLineArgs`, `WorldName` from `App.AppSettings`) |
+
+The format's code is plain `sh` run with `cd` into a worlds folder, so the same snippet works on the
+server (over ssh) and on the downloaded copy.
+
+1. **Server folder.** A folder typed in once for the profile (column 8 of `targets.tsv`), else the
+   server type's save folder + `SERVER_WORLDS`, else `SERVER_SAVES/SERVER_WORLDS` under the SSH
+   user's home. If none exists, it asks and remembers. Re-running setup clears it.
+2. **Local folder.** `LOCAL_WORLDS_WIN` under each Windows user folder seen from WSL
+   (`/mnt/*/Users/*`, shared with Gale's search as `WIN_USERS_GLOB`) or `$USERPROFILE` (Git Bash),
+   and `LOCAL_WORLDS_HOME` under `$HOME`. One is used as is; several are offered once and the pick
+   saved as `LOCAL_WORLDS` (`game=folder|...`) in the config.
+3. **Consistent copy.** The server keeps running, so the copy can't be a snapshot. Instead: read
+   the stamp, `rsync -rlt --delete` the world's paths (`--include=/<path>` and `/<path>/***`, then
+   `--exclude=*`) into `~/.cache/game-mod-sync/worlds/<game>/`, read the stamp again, and read the
+   copy's stamp. All three equal = no save landed during the copy. Otherwise copy again (only the
+   changes travel), up to 3 times. rsync's exit 24 (files vanished) means a save happened; the stamps
+   decide. For Valheim the stamp is the newest save number with its `.ok` and all three `_main`
+   files. That relies on the game writing the `.ok` last and only then removing the previous
+   save's files, which is what its folders show on a live server; Iron Gate doesn't document the
+   format.
+4. **Install.** This computer's copy of the world's paths is moved (a rename, same disk) to
+   `<worlds folder>/../game-mod-sync-backups/<time>/` (outside the worlds folder, so the game
+   doesn't list it; `KEEP_BACKUPS` kept), then the cached copy is put in place. If that fails, the
+   old copy is moved back.
 
 ## Drawn menus and checklists (`lib/ui-tree.sh`)
 
@@ -243,6 +284,9 @@ the run's `screenshots` artifact, which is what gets committed (a PR checklist i
 | `plugins/sources/gale.sh` | Finds Gale's data folder and lists its games and profiles ([gale.md](../plugins/sources/gale.md)) |
 | `plugins/backends/amp.sh` | Finds game folders inside AMP instances ([amp.md](../plugins/backends/amp.md)) |
 | `plugins/backends/ssh.sh` | Any SSH server: you type the game folder ([ssh.md](../plugins/backends/ssh.md)) |
+| `lib/worlds.sh` | World download: folders, consistent copy, local backup and install |
+| `plugins/worlds/valheim.sh` | Valheim's chunked world folders ([valheim.md](../plugins/worlds/valheim.md)) |
+| `plugins/worlds/files.sh` | Worlds saved as `<world>.<ext>` files ([files.md](../plugins/worlds/files.md)) |
 | `plugins/games/_default.conf` | Defaults for every game (BepInEx layout) |
 | `plugins/games/valheim.conf` | Valheim specifics |
 
@@ -250,8 +294,8 @@ Per-computer state lives in `~/.config/game-mod-sync/` (or `$GMS_CONFIG_DIR`):
 
 | File | Contents |
 |---|---|
-| `config` | Gale folder, last server type, host and user, `EXTRA_EXCLUDES`, `KEEP_BACKUPS`, `AMP_INSTANCES_DIR` |
-| `targets.tsv` | One line per profile: `source  game  profile  backend  user@host  game root  kept` (tab-separated) |
+| `config` | Gale folder, last server type, host and user, `EXTRA_EXCLUDES`, `KEEP_BACKUPS`, `AMP_INSTANCES_DIR`, `LOCAL_WORLDS` |
+| `targets.tsv` | One line per profile: `source  game  profile  backend  user@host  game root  kept  worlds` (tab-separated) |
 | `plugins/{sources,backends,games}/` | Optional: your own plugins and overrides (see the top of this page) |
 
 ## Adding a game
@@ -330,6 +374,23 @@ describing its usage and design (see [gale.md](../plugins/sources/gale.md) as a 
 r2modman would be a close copy of `gale.sh`. Its profiles are in
 `r2modmanPlus-local/<Game>/profiles/<profile>/` with the same `BepInEx/` layout. Its game folder
 names differ from Gale's (`Valheim` vs `valheim`), so map them to the same game ids.
+
+## Adding a world format
+
+Add `plugins/worlds/<name>.sh` and `plugins/worlds/<name>.md`, then set `WORLD_FORMAT=<name>` (and
+the folders) in the game file. A game whose worlds are a few `<world>.<ext>` files needs no plugin:
+`WORLD_FORMAT=files` with `WORLD_FILES="ext ext"`.
+
+```bash
+<name>_label()          # e.g. "Valheim (chunked saves)"
+<name>_list_sh()        # print sh code that, run in a worlds folder, prints
+                        # "world<TAB>details" per complete world, in the order to offer them
+<name>_paths WORLD      # the names in the worlds folder that make up WORLD
+<name>_stamp_sh WORLD   # print sh code that, run in a worlds folder, prints what changes with
+                        # every save of WORLD (nothing if it has no complete save). It's
+                        # compared between the server and the copy, so it must not depend on
+                        # file times
+```
 
 ## Alternatives considered
 

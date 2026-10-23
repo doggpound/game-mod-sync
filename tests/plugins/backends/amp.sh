@@ -56,3 +56,29 @@ t_short_name_is_the_instance() {
   load_app
   assert_eq Valheim01 "$(where_of amp "/home/amp/.ampdata/instances/Valheim01/Valheim/896660")" "where_of"
 }
+
+t_reads_the_save_folder_and_world_from_the_settings() {
+  local r
+  r=$(amp_instance V1)
+  printf '%s\n' 'App.CommandLineArgs=-name "{{ServerName}}" -world "{{WorldName}}" -savedir "Saves" {{crossplay}}' \
+    'App.AppSettings={"ServerName":"x","WorldName":"Midgard"}' >"$REMOTE/.ampdata/instances/V1/GenericModule.kvp"
+  load_app
+  assert_eq "$(printf 'Saves\tMidgard')" "$(amp_saves amp@server "$r" "-savedir WorldName")" "saves"
+}
+
+t_save_folder_with_spaces() {
+  local r
+  r=$(amp_instance V1)
+  printf '%s\n' 'App.CommandLineArgs=-savedir "My Saves" -port 1' >"$REMOTE/.ampdata/instances/V1/GenericModule.kvp"
+  load_app
+  assert_eq "$(printf 'My Saves\t')" "$(amp_saves amp@server "$r" "-savedir WorldName")" "saves"
+}
+
+t_template_values_are_not_used() {
+  local r
+  r=$(amp_instance V1)
+  printf '%s\n' 'App.CommandLineArgs=-savedir "{{SaveDir}}"' 'App.AppSettings={"WorldName":"{{x}}"}' \
+    >"$REMOTE/.ampdata/instances/V1/GenericModule.kvp"
+  load_app
+  assert_eq "" "$(amp_saves amp@server "$r" "-savedir WorldName")" "saves"
+}

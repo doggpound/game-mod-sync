@@ -15,6 +15,7 @@ AMP_INSTANCES_DIR=".ampdata/instances"
 EXTRA_EXCLUDES=""    # extra excludes for every game, space separated
 KEEP_BACKUPS=5       # server-side backups to keep, 0 = off
 DEFAULT_UI=""        # cli or tui: the interface without --cli / --tui (empty = cli)
+LOCAL_WORLDS=""      # "game=folder|...": local worlds folder per game, when several were found
 
 CONFIG_DIR="${GMS_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/game-mod-sync}"
 CONFIG_FILE="$CONFIG_DIR/config"
@@ -28,6 +29,8 @@ PROG=${PROG:-game-mod-sync}
 . "$APP_DIR/lib/ui-${GMS_UI:-text}.sh"
 # shellcheck source=lib/configs.sh
 . "$APP_DIR/lib/configs.sh"
+# shellcheck source=lib/worlds.sh
+. "$APP_DIR/lib/worlds.sh"
 
 # ---------------------------------------------------------------- plugins --
 # Plugins live in the repo (plugins/) and, optionally, in your config folder
@@ -36,6 +39,7 @@ PROG=${PROG:-game-mod-sync}
 #   plugins/sources/<name>.sh   where profiles come from
 #   plugins/loaders/<name>.sh   mod loaders (where mods and configs live)
 #   plugins/backends/<name>.sh  server types
+#   plugins/worlds/<name>.sh    world formats (how a game saves a world)
 #   plugins/games/<id>.conf     per-game settings (repo first, then yours)
 PLUGIN_DIR="$APP_DIR/plugins"
 USER_PLUGIN_DIR="$CONFIG_DIR/plugins"
@@ -60,9 +64,11 @@ plugin_file() { # KIND NAME -> your copy if you have one, else the repo's
 SOURCES=$(plugin_names sources | paste -sd' ' -)        # menu order
 BACKENDS=$(plugin_names backends ssh | paste -sd' ' -)  # "Other (SSH)" always last
 LOADERS=$(plugin_names loaders | paste -sd' ' -)
+WORLD_FORMATS=$(plugin_names worlds | paste -sd' ' -)
 for _p in $SOURCES;  do . "$(plugin_file sources "$_p")";  done
 for _p in $LOADERS;  do . "$(plugin_file loaders "$_p")";  done
 for _p in $BACKENDS; do . "$(plugin_file backends "$_p")"; done
+for _p in $WORLD_FORMATS; do . "$(plugin_file worlds "$_p")"; done
 # shellcheck source=/dev/null
 [ -f "$CONFIG_FILE" ] && . "$CONFIG_FILE"
 
@@ -83,6 +89,9 @@ Usage: $PROG [options]
   -v, --verbose        list every file, not just a per-mod summary
       --setup          (re)pick the server folder for the chosen profile
       --refresh-tags   look up every mod's client/server tags on Thunderstore again
+      --download-world copy a world from the profile's server into this
+                       computer's saves (with -p; nothing on the server changes)
+      --world NAME     the world to download (default: the one the server runs)
       --list           show saved profile -> server mappings and exit
       --games          show detected games and what gets synced for each
       --config         print config file paths and exit
@@ -107,7 +116,8 @@ EOF
 load_game() { # GAME_ID [PROFILE_DIR]
   GAME_ID=$1
   GAME_NAME="" SYNC_DIRS="" EXCLUDES="" CONFIG_DIRS="" CONFIG_SKIP="" GAME_MARKER="" SERVER_MATCH="" AFTER_SYNC=""
-  local _b; for _b in $BACKENDS; do eval "MANAGED_$_b=''"; done
+  WORLD_FORMAT="" WORLD_FILES="" SERVER_SAVES="" SERVER_WORLDS="" LOCAL_WORLDS_WIN="" LOCAL_WORLDS_HOME="" WORLD_NOTE=""
+  local _b; for _b in $BACKENDS; do eval "MANAGED_$_b='' SAVES_$_b=''"; done
   LOADER=""
   for _b in $LOADERS; do
     if [ -n "${2:-}" ] && "${_b}_detect" "$2"; then LOADER=$_b; break; fi
@@ -442,6 +452,21 @@ $(printf '%s\n' "$WAIT_ERR" | tail -n 3)"
   say "$AFTER_SYNC"
 }
 
+# Download a world from the entry's server (lib/worlds.sh).
+run_download() { # "SOURCE<TAB>GAME<TAB>PROFILE<TAB>DIR"
+  local src game profile pdir
+  IFS=$'\t' read -r src game profile pdir <<<"$1"
+  load_game "$game" "$pdir"
+  if ! world_supported; then
+    say "$GAME_NAME has no world download (its game file sets no WORLD_FORMAT)."
+    return 0
+  fi
+  if [ "$DO_SETUP" = 1 ] || ! target_get "$src" "$game" "$profile" >/dev/null; then
+    setup_target "$src" "$game" "$profile" || { NOTES=""; return 0; }
+  fi
+  world_download "$src" "$game" "$profile"
+}
+
 run_entry() { # "SOURCE<TAB>GAME<TAB>PROFILE<TAB>DIR"
   local src game profile pdir
   IFS=$'\t' read -r src game profile pdir <<<"$1"
@@ -462,6 +487,7 @@ config_paths() {
   for s in $SOURCES;  do printf '  source   %-8s %s\n' "$s" "$(plugin_file sources "$s")"; done
   for s in $LOADERS;  do printf '  loader   %-8s %s\n' "$s" "$(plugin_file loaders "$s")"; done
   for s in $BACKENDS; do printf '  backend  %-8s %s\n' "$s" "$(plugin_file backends "$s")"; done
+  for s in $WORLD_FORMATS; do printf '  world    %-8s %s\n' "$s" "$(plugin_file worlds "$s")"; done
 }
 
 # LABELS: one menu line per entry in ENTRIES ("Game / profile -> where").
@@ -667,7 +693,7 @@ Default interface             text (cli) or full screen (tui) when started
 
 # ------------------------------------------------------------------- main --
 gms_main() {
-GAME_FILTER="" PROFILE_ARG="" DRY_RUN=0 ASSUME_YES=0 VERBOSE=0 DO_SETUP=0 REFRESH_TAGS=0
+GAME_FILTER="" PROFILE_ARG="" DRY_RUN=0 ASSUME_YES=0 VERBOSE=0 DO_SETUP=0 REFRESH_TAGS=0 DO_WORLD=0 WORLD_ARG=""
 while [ $# -gt 0 ]; do
   case $1 in
     -g|--game)    [ $# -ge 2 ] || die "$1 needs a game id"; GAME_FILTER=$2; shift ;;
@@ -679,6 +705,9 @@ while [ $# -gt 0 ]; do
     -v|--verbose) VERBOSE=1 ;;
     --setup)      DO_SETUP=1 ;;
     --refresh-tags) REFRESH_TAGS=1 ;;
+    --download-world) DO_WORLD=1 ;;
+    --world)      [ $# -ge 2 ] || die "$1 needs a world name"; WORLD_ARG=$2; DO_WORLD=1; shift ;;
+    --world=*)    WORLD_ARG=${1#*=}; DO_WORLD=1 ;;
     --cli|--tui)  ;;   # handled by the launcher
     --list)
       [ -s "$TARGETS_FILE" ] || { echo "No profiles set up yet."; exit 0; }
@@ -694,10 +723,11 @@ while [ $# -gt 0 ]; do
         "${s}_init" || continue
         "${s}_list" | cut -f1 | sort -u | while IFS= read -r g; do
           load_game "$g"
-          printf '%s%s%s (%s, %s, %s)\n    sync: %s\n    keep on server: %s\n    configs: %s%s\n' \
+          printf '%s%s%s (%s, %s, %s)\n    sync: %s\n    keep on server: %s\n    configs: %s%s\n    worlds: %s\n' \
             "$B" "$GAME_NAME" "$N" "$g" "$("${s}_label")" "$("${LOADER}_label" 2>/dev/null || echo "no loader")" \
             "$SYNC_DIRS" "${EXCLUDES:-nothing} $EXTRA_EXCLUDES" "${CONFIG_DIRS:-none}" \
-            "${CONFIG_SKIP:+ (never copied: $CONFIG_SKIP)}"
+            "${CONFIG_SKIP:+ (never copied: $CONFIG_SKIP)}" \
+            "$(if [ -n "$WORLD_FORMAT" ]; then "${WORLD_FORMAT}_label" 2>/dev/null || echo "$WORLD_FORMAT (no plugin)"; else echo "no download"; fi)"
         done
       done
       exit 0 ;;
@@ -730,9 +760,11 @@ if [ -n "$PROFILE_ARG" ]; then
   done
   [ ${#pick[@]} -gt 0 ] || die "no profile named '$PROFILE_ARG'${GAME_FILTER:+ for game '$GAME_FILTER'}"
   [ ${#pick[@]} -eq 1 ] || die "'$PROFILE_ARG' exists for several games ($games ) - add -g GAME"
-  run_entry "${pick[0]}"
+  if [ "$DO_WORLD" = 1 ]; then run_download "${pick[0]}"; else run_entry "${pick[0]}"; fi
 elif [ ${#ENTRIES[@]} -eq 1 ] && [ "$ASSUME_YES" = 1 ]; then
-  run_entry "${ENTRIES[0]}"
+  if [ "$DO_WORLD" = 1 ]; then run_download "${ENTRIES[0]}"; else run_entry "${ENTRIES[0]}"; fi
+elif [ "$DO_WORLD" = 1 ]; then
+  die "--download-world needs a profile: add -p PROFILE (or press D on it in the menu)"
 else
   # Main menu: after each sync (or "already in sync") come back here.
   while :; do
@@ -751,14 +783,24 @@ before changing anything. Afterwards you come back here.
 Ok (Enter)  sync the highlighted profile
 E           edit the highlighted profile: its server, server-managed files;
             also the config file and the mods' client/server tags
+D           download a world from the highlighted profile's server into
+            this computer's saves, to test mod updates on a copy of it
+            (nothing on the server is changed)
 Exit        quit (Tab moves to it)"
-    UI_BUTTONS="Ok Exit" UI_KEYS="e:Edit"
+    UI_BUTTONS="Ok Exit" UI_KEYS="e:Edit d:Download"
     rc=0; ui_choose --no-cancel "Which profile do you want to sync?" "${labels[@]}" || rc=$?
     case $rc in
       0) ;;
       4) if [ "$UI_PRESSED" = Edit ]; then
            if [ "$CHOICE" -ge 1 ] && [ "$CHOICE" -le ${#ENTRIES[@]} ]; then edit_menu "${ENTRIES[$((CHOICE - 1))]}"
            else edit_menu; fi
+           continue
+         fi
+         if [ "$UI_PRESSED" = Download ] && [ "$CHOICE" -ge 1 ] && [ "$CHOICE" -le ${#ENTRIES[@]} ]; then
+           run_download "${ENTRIES[$((CHOICE - 1))]}"
+           ui_title "Download result"
+           ui_report
+           DO_SETUP=0
            continue
          fi
          break ;;

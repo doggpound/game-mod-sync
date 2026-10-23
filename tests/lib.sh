@@ -29,6 +29,7 @@ SH
   printf '#!/bin/sh\nexit 22\n' >"$SANDBOX/bin/curl"; chmod +x "$SANDBOX/bin/curl"
   export PATH="$SANDBOX/bin:$PATH" HOME="$LOCAL/home" XDG_DATA_HOME="$LOCAL/home/.local/share"
   export XDG_CACHE_HOME="$LOCAL/cache" GMS_CONFIG_DIR="$LOCAL/config" GMS_NO_SSH_MUX=1
+  export GMS_WIN_USERS="$LOCAL/mnt/*/Users/*"   # Windows user folders, as WSL sees them
   unset GALE_DATA_DIR APPDATA
   : >"$SANDBOX/answers"
   export GMS_TTY="$SANDBOX/answers"   # the text UI reads typed answers from here
@@ -72,6 +73,18 @@ amp_instance() {
   local r="$REMOTE/.ampdata/instances/$1/Valheim/896660"
   mkdir -p "$r/BepInEx/plugins" "$r/BepInEx/config" "$r/BepInEx/core"
   printf '%s' "$r"
+}
+
+# valheim_world FOLDER WORLD SAVE -> a chunked Valheim world (save number SAVE)
+# in the worlds folder FOLDER (prints the world's folder)
+valheim_world() {
+  local w="$1/$2"
+  mkdir -p "$w"
+  rm -f "$w"/_main.*
+  echo "fwl $3" >"$w/_main.$3.fwl2"; echo "db $3" >"$w/_main.$3.db2"; echo "index $3" >"$w/_main.$3.chunks"
+  echo "terrain" >"$w/00_00__0_1.chunk"; echo "base $3" >"$w/10_1a__1_$3.chunk"
+  echo ok >"$w/_main.$3.ok"
+  printf '%s' "$w"
 }
 
 # ---- asserts --------------------------------------------------------------------

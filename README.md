@@ -141,6 +141,33 @@ changes its tags), use **Edit → Refresh mod tags** or `--refresh-tags`.
 Configs are never deleted on the server, and a replaced one goes to the backups. With `-y`, only
 new configs are copied.
 
+## Download a world
+
+To try mod updates on a copy of the server's world before syncing them, highlight a profile in the
+main menu and press **D** (`1d` for profile 1 in the text version), or run
+`game-mod-sync -p MyProfile --download-world`:
+
+1. Pick a world. The one the server runs is first; the game's own backups are listed after it.
+2. Check what happens and answer Yes. Your copy of that world (if you have one) is moved to
+   `game-mod-sync-backups` next to the game's worlds folder first (last 5 kept).
+3. Update the profile's mods in Gale, start the game with the profile and play the copy. Then sync.
+
+```
+World Midgard (save 1940, 2026-10-22 18:55, 65M)
+  from  Valheim01 on game.example.com: .../Valheim/896660/Saves/worlds_local
+  to    /mnt/c/Users/me/AppData/LocalLow/IronGate/Valheim/worlds_local
+  Your copy (save 2) is moved to .../IronGate/Valheim/game-mod-sync-backups first.
+Nothing on the server is changed. Close Valheim on this computer first.
+```
+
+- It only reads from the server, and only replaces the one world on this computer.
+- The server keeps playing: if it saves during the copy, the copy is taken again (up to 3 times).
+- The server's worlds folder and this computer's are found by themselves (AMP: from the instance's
+  settings). If not, you're asked once and it's remembered.
+- Valheim keeps your character (inventory, skills) on your computer, so what it gains or loses in
+  the copy comes along to the server. Test with a spare character.
+- A game needs a world format to have this (see [World formats](#world-formats)); `--games` shows it.
+
 ## Edit
 
 Highlight a profile in the main menu and press **E** (`1e` for profile 1 in the text version) to change what you've set up for it. **Back** (`b` in the text version) returns to
@@ -170,6 +197,8 @@ Every option works in both interfaces.
 | `game-mod-sync -v` | List every file |
 | `game-mod-sync --setup` | Point a profile at a different server folder |
 | `game-mod-sync --refresh-tags` | Look up the mods' client/server tags again |
+| `game-mod-sync -p MyProfile --download-world` | Copy a world from the profile's server into this computer's saves |
+| `game-mod-sync -p MyProfile --world Ashlands -y` | That world, no questions (`-y` alone takes the one the server runs) |
 | `game-mod-sync --list` | Show where each profile syncs to |
 | `game-mod-sync --games` | Show detected games and what gets synced |
 | `game-mod-sync --config` | Show where settings are stored |
@@ -185,6 +214,11 @@ Every option works in both interfaces.
 
 ## Mod loaders
 - [BepInEx](plugins/loaders/bepinex.md)
+
+## World formats
+
+- [Valheim](plugins/worlds/valheim.md)
+- [Files (`<world>.<ext>`)](plugins/worlds/files.md)
 
 ## Good to know
 
