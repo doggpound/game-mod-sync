@@ -1,0 +1,46 @@
+name: go-cache
+
+# Fills the Go cache on main, which every pull request's branch can start from.
+# A cache made on one pull request's branch can't be used by another's, and the
+# tests only run on pull requests, so without this each new branch would
+# download Go and every library again. Runs only when the Go version or the
+# libraries change (or by hand); it downloads and compiles, nothing else.
+on:
+  push:
+    branches: [main]
+    paths:
+      - go.mod
+      - go.sum
+      - .forgejo/go-setup.sh
+      - .forgejo/workflows/go-cache.yml
+  workflow_dispatch:
+
+jobs:
+  go-cache:
+    runs-on: linux-amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Go cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/gms-go
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ hashFiles('.forgejo/go-setup.sh') }}-${{ hashFiles('go.sum') }}
+          restore-keys: go-${{ hashFiles('.forgejo/go-setup.sh') }}-
+
+      - name: Go toolchain
+        run: bash .forgejo/go-setup.sh
+
+      - name: Download and compile
+        env:
+          GOPROXY: ${{ vars.GOPROXY }}
+        run: |
+          export GOTOOLCHAIN=local CGO_ENABLED=0
+          go mod download
+          go vet ./...   # compiles the code and its tests into the build cache
+          for p in windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            GOOS=${p%/*} GOARCH=${p#*/} go build -trimpath -o /dev/null ./cmd/game-mod-sync
+          done
