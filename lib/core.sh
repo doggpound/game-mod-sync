@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-VERSION="0.0.1"
+VERSION="0.1.0"
 
 # Defaults, overridable in the config file.
 GALE_DATA_DIR=""

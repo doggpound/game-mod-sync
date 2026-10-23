@@ -246,9 +246,11 @@ cfg_diff_full() {
         }
       }'
   else
+    # diff exits 1 when the files differ, and head stops reading after 200
+    # lines; under pipefail either would fail the caller, so it's ignored.
     diff <(sed -e 's/\r$//' -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$2") \
          <(sed -e 's/\r$//' -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' "$1") |
-      sed -n -e 's/^< /    server: /p' -e 's/^> /    yours:  /p' | head -n 200
+      sed -n -e 's/^< /    server: /p' -e 's/^> /    yours:  /p' | head -n 200 || true
   fi
 }
 CFG_FULL=""   # all differences of this scan, ready for ui_view

@@ -3,10 +3,9 @@ name: tests
 # Runs tests/run.sh: one test file per plugin (tests/plugins/<kind>/<name>.sh)
 # plus an end-to-end sync, and checks that the README's badges (docs/badges/)
 # match the results. main is protected: changes come in through pull requests,
-# and this check must pass before one can be merged.
+# and this check must pass before one can be merged. So it runs on pull
+# requests only, not again on the merge (run it by hand for main if needed).
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 

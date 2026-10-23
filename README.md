@@ -242,7 +242,7 @@ tests/run.sh            # everything
 tests/run.sh amp gale   # only these files
 ```
 
-`.forgejo/workflows/tests.yml` runs them (and `shellcheck`) on every push and pull request.
+`.forgejo/workflows/tests.yml` runs them (and `shellcheck`) on every pull request.
 `main` is protected: changes come in through pull requests, and these checks must pass before
 one is merged. The badge panel at the top of this page (`docs/badges/panel.svg`, made from the
 single badges next to it) is generated; after changing
