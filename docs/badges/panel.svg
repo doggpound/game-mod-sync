@@ -8,13 +8,13 @@
   <g clip-path="url(#r1)"><rect width="57" height="20" fill="#555"/><rect x="57" width="51" height="20" fill="#8e2de2"/><rect width="108" height="20" fill="url(#s1)"/></g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
     <text x="28" y="15" fill="#010101" fill-opacity=".3">version</text><text x="28" y="14">version</text>
-    <text x="82" y="15" fill="#010101" fill-opacity=".3">v0.0.1</text><text x="82" y="14">v0.0.1</text>
+    <text x="82" y="15" fill="#010101" fill-opacity=".3">v0.1.0</text><text x="82" y="14">v0.1.0</text>
   </g></svg><svg x="202" y="14" width="114" height="20">  <linearGradient id="s2" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
   <clipPath id="r2"><rect width="114" height="20" rx="3" fill="#fff"/></clipPath>
   <g clip-path="url(#r2)"><rect width="44" height="20" fill="#555"/><rect x="44" width="70" height="20" fill="#4c1"/><rect width="114" height="20" fill="url(#s2)"/></g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
     <text x="22" y="15" fill="#010101" fill-opacity=".3">tests</text><text x="22" y="14">tests</text>
-    <text x="79" y="15" fill="#010101" fill-opacity=".3">73 passed</text><text x="79" y="14">73 passed</text>
+    <text x="79" y="15" fill="#010101" fill-opacity=".3">74 passed</text><text x="79" y="14">74 passed</text>
   </g></svg><svg x="322" y="14" width="173" height="20">  <linearGradient id="s3" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
   <clipPath id="r3"><rect width="173" height="20" rx="3" fill="#fff"/></clipPath>
   <g clip-path="url(#r3)"><rect width="103" height="20" fill="#555"/><rect x="103" width="70" height="20" fill="#4c1"/><rect width="173" height="20" fill="url(#s3)"/></g>
@@ -26,7 +26,7 @@
   <g clip-path="url(#r4)"><rect width="109" height="20" fill="#555"/><rect x="109" width="64" height="20" fill="#4c1"/><rect width="173" height="20" fill="url(#s4)"/></g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
     <text x="54" y="15" fill="#010101" fill-opacity=".3">end-to-end sync</text><text x="54" y="14">end-to-end sync</text>
-    <text x="141" y="15" fill="#010101" fill-opacity=".3">7 passed</text><text x="141" y="14">7 passed</text>
+    <text x="141" y="15" fill="#010101" fill-opacity=".3">8 passed</text><text x="141" y="14">8 passed</text>
   </g></svg><svg x="680" y="14" width="180" height="20">  <linearGradient id="s5" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
   <clipPath id="r5"><rect width="180" height="20" rx="3" fill="#fff"/></clipPath>
   <g clip-path="url(#r5)"><rect width="116" height="20" fill="#555"/><rect x="116" width="64" height="20" fill="#4c1"/><rect width="180" height="20" fill="url(#s5)"/></g>
