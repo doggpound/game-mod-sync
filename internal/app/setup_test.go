@@ -240,3 +240,15 @@ func TestEditForgetsServerAndPassword(t *testing.T) {
 		t.Errorf("targets %v\n%s", st.Targets, out.String())
 	}
 }
+
+func TestEditDefaultInterface(t *testing.T) {
+	s := newAppSetup(t)
+	out, err := s.run(t, "1e\n6\n2\nb\nx\n") // Edit, Default interface, tui, back, exit
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	st, _ := state.Load(s.cfg)
+	if st.Config.DefaultUI != "tui" || !strings.Contains(out, "Default interface: tui (from the next start)") {
+		t.Errorf("default_ui %q\n%s", st.Config.DefaultUI, out)
+	}
+}

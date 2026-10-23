@@ -168,7 +168,7 @@ func TestServerInstalledFileIsAskedOnceAndLeftAlone(t *testing.T) {
 func TestListShowsTargets(t *testing.T) {
 	newAppSetup(t) // sets GMS_CONFIG_DIR
 	var out bytes.Buffer
-	if err := Run([]string{"--list"}, text.New(strings.NewReader(""), &out), &out, "test"); err != nil {
+	if err := Run([]string{"--list"}, strings.NewReader(""), &out, "test"); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "Valheim / MyProfile -> Valheim01 on 127.0.0.1") {

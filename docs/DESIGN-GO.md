@@ -84,11 +84,23 @@ own key, so later runs don't ask.
 
 ## Interfaces
 
-The app never prints or reads directly; it calls a UI interface with the same operations the bash
-version has (`Choose`, `Checklist` with details per row, `Ask`, `Confirm`, `Wait`, `Progress`,
-`View`, messages). The text UI is plain prompts with colours (Lip Gloss) and works without a
-terminal (`-y`). The full-screen UI is Bubble Tea: menus with row keys (E, D), checklists whose
-rows open to show differences, help overlays and progress bars.
+The app never prints or reads directly; it calls a UI interface (`internal/ui`): `Choose` (a menu
+with row keys such as E and D), `Check` (a checklist with details per row), `Ask`, `Password`,
+`Confirm`, `View`, and messages (`Info` for what's happening, `Say`, `OK`, `Warn`). The text UI
+(`internal/ui/text`) is numbered menus and prompts, and works without a terminal.
+
+The full-screen UI (`internal/ui/tui`, Bubble Tea v1) is **one screen for the whole session**: each
+question becomes a view on it, so there's no flicker between dialogs (the bash version needed
+terminfo tricks for that). The app runs in its own goroutine and each `ui.UI` call sends a request
+to the screen and waits for the answer. The messages since the last question are shown above it
+(PgUp/PgDn scroll them when they don't fit), and while the app works a spinner shows its last
+`Info`. Menus: arrows, Enter, the row keys, 1-9, `?` help, Esc back (Exit on the main menu).
+Checklists: Space ticks, Right/Left open and close a row's details (the full differences), `+`/`-`
+all, `a`/`n` tick all or none. Ctrl+C quits from anywhere (every waiting question returns "exit").
+When it ends, the last messages are printed to the normal terminal.
+
+Which one: `--tui` or `--cli` for one run, else `default_ui` in the settings (Edit → Default
+interface); the full screen only on a terminal, so scripts always get text.
 
 ## Builds and releases
 
@@ -185,7 +197,7 @@ Each phase is its own pull request and leaves the bash version untouched.
      the system's credential store), finding the game folder (AMP over SSH or SFTP; any server by
      typing it), Edit menu basics.
 3. **Configs:** comparison, owners from DLLs, client/server tags (Thunderstore), the checklist.
-4. **Full screen:** Bubble Tea screens for everything above, Edit menu, help.
+4. **Full screen:** Bubble Tea screens for everything above, Edit menu (incl. Default interface), help.
 5. **World download.**
 6. **Release v1.0.0:** packaging, update check, README and screenshots for the Go version; the bash
    files are removed. With the bash launcher gone, `cmd/game-mod-sync/main.go` moves to the

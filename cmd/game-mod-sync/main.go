@@ -46,10 +46,10 @@ func run(args []string, in io.Reader, out io.Writer) error {
 			return nil
 		case "help", "--help", "-h":
 			usage(out)
-			return app.Run([]string{"-h"}, text.New(in, out), out, version)
+			return app.Run([]string{"-h"}, in, out, version)
 		}
 	}
-	return app.Run(args, text.New(in, out), out, version)
+	return app.Run(args, in, out, version)
 }
 
 func usage(out io.Writer) {
