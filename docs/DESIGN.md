@@ -1,5 +1,9 @@
 # Design
 
+> A Go version is being written so the tool runs as one downloaded file on Windows, Linux and
+> macOS. Its plan is in [DESIGN-GO.md](DESIGN-GO.md). This page describes the bash version, which
+> stays the reference for how things behave until the Go version replaces it.
+
 `game-mod-sync` connects five kinds of plugins. Each is a small file, so adding support for
 something new means adding a file, not changing the core.
 
