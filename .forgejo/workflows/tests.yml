@@ -85,14 +85,23 @@ jobs:
           # platform it's released for.
           export GOTOOLCHAIN=local CGO_ENABLED=0
           go version
-          ok=1
+          ok=1 t=$SECONDS
+          took() { echo "($1: $((SECONDS - t))s)"; t=$SECONDS; }
           unformatted=$(gofmt -l cmd internal)
           if [ -n "$unformatted" ]; then echo "not gofmt-formatted:"; echo "$unformatted"; ok=0; fi
           go vet ./... || ok=0
+          took "format + vet"
           go test -count=1 ./... || ok=0
-          for p in windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
-            GOOS=${p%/*} GOARCH=${p#*/} go build -trimpath -o /dev/null ./cmd/game-mod-sync || { echo "build failed: $p"; ok=0; }
+          took "tests"
+          go build -trimpath -o /dev/null ./cmd/game-mod-sync || { echo "build failed: linux/amd64"; ok=0; }
+          took "build"
+          # The other platforms are type-checked (including their own files,
+          # e.g. the Windows SSH agent), not linked: that's the slow part. The
+          # release builds all of them for real.
+          for p in windows/amd64 windows/arm64 linux/arm64 darwin/amd64 darwin/arm64; do
+            GOOS=${p%/*} GOARCH=${p#*/} go vet ./... || { echo "doesn't compile for $p"; ok=0; }
           done
+          took "other platforms"
           [ "$ok" = 1 ] || touch "$RUNNER_TEMP/failed"
 
       - name: Screenshots artifact
