@@ -48,11 +48,17 @@ adding a server type or a world format still means adding one file and not chang
 ## Replacing rsync
 
 rsync did three jobs: find what differs by content, copy only that, and keep what it replaces.
-The Go version does them over one SSH connection:
+The Go version does them over one SSH connection, and works with **SFTP alone**: most game hosts
+give out SFTP details (address, port, user name, password) and don't let you run commands.
 
-1. **Hash the server's side** with one command per sync folder:
-   `cd <folder> && find . -type f -print0 | xargs -0 sha256sum` (GNU coreutils, on every Linux
-   server). If `sha256sum` is missing, files are hashed by reading them over SFTP (slow, but works).
+1. **Hash the server's side.** When the login can run commands, one command per sync folder:
+   `find . -type f -print0 | xargs -0 -r sha256sum -z` (GNU coreutils, on every Linux server).
+   When it can't (SFTP only), or `sha256sum` is missing, the files are listed over SFTP and read
+   to hash them, except the ones the **manifest** already knows: `.mod-sync-backups/manifest.json`
+   on the server records each file's hash with the size and modification time it had. A file with
+   the same size and time isn't read again; anything changed by something else gets a new time and
+   is read once. So only the first SFTP-only sync reads every file. The manifest sits in the
+   backups folder, outside the synced folders, and is shared by everyone who syncs to that server.
 2. **Hash this computer's side** in Go and compare by path and hash. The excludes keep rsync's
    pattern rules that the tool uses: `/anchored`, `dir/`, `*`, `**`.
 3. **Plan**: new, changed and deleted files and folders, the same per-mod summary as today.
@@ -66,11 +72,14 @@ around them.
 
 ## SSH
 
-`golang.org/x/crypto/ssh` with `pkg/sftp`. Logging in tries, in order: the SSH agent (Linux
+`golang.org/x/crypto/ssh` with `pkg/sftp`. Whether a login can run commands is checked once per
+connection (`true`); everything else works either way. Logging in tries, in order: the SSH agent (Linux
 `SSH_AUTH_SOCK`; on Windows the OpenSSH agent pipe, which password managers' agents also use),
 keys in `~/.ssh` and the program's own key, then a password. Settings from `~/.ssh/config` (host
 aliases, port, user, key) are used when present. An unknown server shows its fingerprint and asks
-once, then it's saved to `known_hosts`. When a password works, the program offers to install its
+once, then it's saved to `known_hosts`. Like the `ssh` command, it only asks the server for the
+kinds of key already saved for it (a server usually has an ed25519, an ECDSA and an RSA key, and
+`known_hosts` often holds just one); otherwise a known server would look like it had changed. When a password works, the program offers to install its
 own key, so later runs don't ask.
 
 ## Interfaces
@@ -92,6 +101,13 @@ can check the latest release and say when a newer one exists.
 Windows shows "Windows protected your PC" for programs that aren't code-signed; signing can come
 later. macOS needs right-click → Open (or `xattr -d com.apple.quarantine`) for the same reason.
 
+A host's SFTP details map one to one onto the setup questions: address, port, user name,
+password, and the folder to sync to (often `/` is the server's own folder). The README will have a
+short "Use your host's SFTP details" section with examples for common panels. Hosts that only
+allow SFTP usually don't allow installing a key, so the password is kept in the system's
+credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service), never in the
+settings file.
+
 ## Tests
 
 Go's own tests, run in CI next to the bash ones until the bash version is gone. The end-to-end
@@ -100,12 +116,19 @@ the test, so they need no network, no `ssh` program and no fake shell, and also 
 The bash tests' scenarios (sync, backups, excludes, server-managed files, configs, world download)
 are ported one by one.
 
+## Building it yourself
+
+`go build -o dist/game-mod-sync ./cmd/game-mod-sync` (add `.exe` on Windows). Always give `-o`: a
+plain `go build` in the repo's root would write the program over the bash `game-mod-sync` file
+while both versions live side by side. `dist/` is ignored by git. `go test ./...` runs the tests.
+
 ## Phases
 
 Each phase is its own pull request and leaves the bash version untouched.
 
-1. **Core transfer:** module, SSH, the testserver, hashing, compare, apply with backups; a bare
-   `game-mod-sync sync` for one folder. CI builds all six platforms.
+1. **Core transfer:** module, SSH, the testserver, hashing (commands or SFTP only, with the
+   manifest), compare, apply with backups; a bare `game-mod-sync sync` for one folder. CI builds
+   all six platforms.
 2. **Profiles and servers:** Gale, BepInEx, game files, AMP and SSH server types, first-time setup,
    targets, server-managed files, the text interface for a full mod sync, settings migration.
 3. **Configs:** comparison, owners from DLLs, client/server tags (Thunderstore), the checklist.

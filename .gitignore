@@ -1,0 +1,2 @@
+# Go builds (go build -o dist/... ./cmd/game-mod-sync)
+/dist/

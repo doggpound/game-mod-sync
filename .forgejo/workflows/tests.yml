@@ -57,6 +57,24 @@ jobs:
             touch "$RUNNER_TEMP/failed"
           fi
 
+      - name: Go version
+        run: |
+          # The Go rewrite (docs/DESIGN-GO.md): formatting, vet, tests (with a
+          # real SSH/SFTP server inside the tests), and a build for every
+          # platform it's released for. Go 1.26 is the oldest it needs.
+          curl -fsSL https://go.dev/dl/go1.26.10.linux-amd64.tar.gz | tar xz -C "$RUNNER_TEMP"
+          export PATH="$RUNNER_TEMP/go/bin:$PATH" GOTOOLCHAIN=local CGO_ENABLED=0
+          go version
+          ok=1
+          unformatted=$(gofmt -l cmd internal)
+          if [ -n "$unformatted" ]; then echo "not gofmt-formatted:"; echo "$unformatted"; ok=0; fi
+          go vet ./... || ok=0
+          go test -count=1 ./... || ok=0
+          for p in windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            GOOS=${p%/*} GOARCH=${p#*/} go build -trimpath -o /dev/null ./cmd/game-mod-sync || { echo "build failed: $p"; ok=0; }
+          done
+          [ "$ok" = 1 ] || touch "$RUNNER_TEMP/failed"
+
       - name: Screenshots artifact
         uses: actions/upload-artifact@v3
         with:
