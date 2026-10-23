@@ -15,10 +15,11 @@ import (
 )
 
 type appSetup struct {
-	srv  *testserver.Server
-	cfg  string // config folder
-	root string // game folder on the server (AMP layout)
-	pdir string // the Gale profile
+	srv   *testserver.Server
+	cfg   string // config folder
+	root  string // game folder on the server (AMP layout)
+	pdir  string // the Gale profile
+	dials int    // logins so far
 }
 
 // newAppSetup: a Gale Valheim profile MyProfile, an AMP-style instance on the
@@ -53,6 +54,7 @@ func (s *appSetup) run(t *testing.T, answers string, args ...string) (string, er
 	}
 	a := &App{UI: text.New(strings.NewReader(answers), &out), State: st, Opts: parse(t, args),
 		Dial: func(tg state.Target) (*remote.Client, error) {
+			s.dials++
 			return remote.Dial(remote.Options{Host: tg.Host, Port: tg.Port, User: tg.User,
 				Auth: []ssh.AuthMethod{ssh.Password(testserver.Password)}, HostKey: ssh.FixedHostKey(s.srv.HostKey)})
 		}}
@@ -97,11 +99,11 @@ func TestSyncOneProfile(t *testing.T) {
 
 func TestMainMenu(t *testing.T) {
 	s := newAppSetup(t)
-	out, err := s.run(t, "1e\n1\ny\nx\n")
+	out, err := s.run(t, "1e\nb\n1\ny\nx\n") // Edit, Back, sync it, yes, exit
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
-	for _, want := range []string{"1) Valheim / MyProfile  -> Valheim01 on 127.0.0.1", "Edit isn't in the Go version yet", "Synced."} {
+	for _, want := range []string{"1) Valheim / MyProfile  -> Valheim01 on 127.0.0.1", "-- Edit: Valheim / MyProfile --", "Synced."} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}

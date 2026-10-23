@@ -73,7 +73,8 @@ func Start(t testing.TB, opts ...Option) *Server {
 		Handler: s.exec,
 		SubsystemHandlers: map[string]gliderssh.SubsystemHandler{
 			"sftp": func(sess gliderssh.Session) {
-				fs, err := sftp.NewServer(sess)
+				// Logins land in the server's folder, like a host's SFTP.
+				fs, err := sftp.NewServer(sess, sftp.WithServerWorkingDirectory(s.Root))
 				if err != nil {
 					return
 				}

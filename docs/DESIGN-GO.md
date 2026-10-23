@@ -101,12 +101,23 @@ can check the latest release and say when a newer one exists.
 Windows shows "Windows protected your PC" for programs that aren't code-signed; signing can come
 later. macOS needs right-click → Open (or `xattr -d com.apple.quarantine`) for the same reason.
 
-A host's SFTP details map one to one onto the setup questions: address, port, user name,
-password, and the folder to sync to (often `/` is the server's own folder). The README will have a
-short "Use your host's SFTP details" section with examples for common panels. Hosts that only
-allow SFTP usually don't allow installing a key, so the password is kept in the system's
-credential store (Windows Credential Manager, macOS Keychain, Linux Secret Service), never in the
-settings file.
+A host's SFTP details map one to one onto the setup questions: server type, address, port, user
+name, then the folder. A link like `sftp://user@host:2022/folder` can be pasted as the address
+and fills in the rest. The game folder is found by searching for the game's marker folder (e.g.
+`BepInEx/plugins`): with `find` when the login runs commands (AMP: below the instances folder),
+else by walking folders over SFTP from where the login starts (at most 6 levels, 8 for AMP, and
+5000 folders). The folders that look like this game come first, and "Type the folder" is always
+offered. The connection made for setup is used for the sync right after, so nothing is asked twice.
+
+Passwords: the saved one is tried first, then the person is asked (up to 3 tries, so a password
+the host changed is simply asked again), and after a login with a typed password the program
+offers to save it. Hosts that only allow SFTP usually don't allow installing a key, so the
+password goes into the system's credential store (Windows Credential Manager, macOS Keychain,
+Linux Secret Service), never into the settings files. Where there's no store (WSL often has
+none), it's asked each time. Edit → "Forget the saved password" removes it.
+
+A question that gets no answer because the input ended (scripts) takes its default, which is
+always the safe choice (e.g. leave a server-installed file alone; don't apply).
 
 ## Tests
 
@@ -160,4 +171,7 @@ Each phase is its own pull request and leaves the bash version untouched.
 4. **Full screen:** Bubble Tea screens for everything above, Edit menu, help.
 5. **World download.**
 6. **Release v1.0.0:** packaging, update check, README and screenshots for the Go version; the bash
-   files are removed.
+   files are removed. With the bash launcher gone, `cmd/game-mod-sync/main.go` moves to the
+   repository's root, so a plain `go build` makes `game-mod-sync` and
+   `go install github.com/doggpound/game-mod-sync@latest` works. `internal/` stays: it's Go's
+   place for code only this program uses, split by job so each part stays small and tested.
