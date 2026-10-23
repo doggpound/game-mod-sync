@@ -37,3 +37,16 @@ func TestCandidatesUnderWindowsUsersSeenFromWSL(t *testing.T) {
 		t.Errorf("got %v", got)
 	}
 }
+
+func TestModTags(t *testing.T) {
+	root := t.TempDir()
+	os.MkdirAll(filepath.Join(root, "valheim"), 0o755)
+	os.WriteFile(filepath.Join(root, "valheim", "thunderstore_cache.json"),
+		[]byte(`[{"full_name":"Azumatt-AzuClock","categories":["Mods","Client-side"]},{"full_name":"","categories":[]}]`), 0o644)
+	if got := ModTags(root, "valheim"); !reflect.DeepEqual(got, map[string]string{"Azumatt-AzuClock": "Mods|Client-side"}) {
+		t.Errorf("got %v", got)
+	}
+	if got := ModTags(root, "nothing"); len(got) != 0 {
+		t.Errorf("missing file: %v", got)
+	}
+}

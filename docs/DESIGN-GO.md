@@ -127,6 +127,23 @@ the test, so they need no network, no `ssh` program and no fake shell, and also 
 The bash tests' scenarios (sync, backups, excludes, server-managed files, configs, world download)
 are ported one by one.
 
+## Config files
+
+Same rules as the bash version (DESIGN.md, "Configs"): each config folder is compared by content
+like the mods (on SFTP-only hosts through the manifest), files are offered one by one and never
+deleted on the server, new ones ticked, differing ones unticked, and `-y` copies only new ones.
+The server's copies of differing files are read over SFTP to show what differs: `.cfg` files per
+`[Section] Key`, other files as a line diff (`internal/configs`, a small longest-common-subsequence
+diff, so nothing outside Go is needed). Files that differ only in comments, blank lines, spacing
+or line endings are dropped before anything else, so the "not shown" count of files from mods
+that aren't in the profile only counts files that really differ.
+
+Which mod a file belongs to comes from the `[BepInPlugin]` declarations read out of the profile's
+DLLs (`internal/loaders/bepinex.go`, the perl reader's rules), then the folder-name fallbacks.
+Client/server tags come from the bash version's cache file (shared), then Gale's
+`thunderstore_cache.json`, then Thunderstore (6 lookups at a time, 10 s each). The mod changes and
+the picked config files are reviewed together and applied with one backup timestamp.
+
 ## Adding a game
 
 Games are TOML files, not code. The built-in ones are `internal/games/builtin/*.toml` (packed

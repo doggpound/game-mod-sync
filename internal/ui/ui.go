@@ -28,6 +28,17 @@ type Menu struct {
 	NoBack   bool   // main menu: Exit instead of Back
 }
 
+// Checklist is a list of rows to tick.
+type Checklist struct {
+	Title    string
+	Question string // shown above the list (may be several lines)
+	Header   string // column titles, lined up with the rows' text
+	Rows     []string
+	On       []bool   // ticked at the start
+	Details  []string // per row, shown when it's opened (full screen) or on d (text); may be nil
+	Help     string
+}
+
 // UI is everything the app asks of an interface.
 type UI interface {
 	Info(msg string) // something is happening: "Comparing ..."
@@ -44,4 +55,8 @@ type UI interface {
 	Ask(question, def string) (string, error)
 	// Password asks without showing what's typed.
 	Password(question string) (string, error)
+	// Check shows a checklist and returns which rows are ticked. ErrBack on Back.
+	Check(c Checklist) ([]bool, error)
+	// View shows a long text (full screen: a scrollable box).
+	View(title, text string)
 }
