@@ -123,10 +123,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
 		if m.help != nil {
-			m.help.Width, m.help.Height = m.w, m.h-3
+			m.help.Width, m.help.Height = m.w-4, m.h-5
 		}
 		if m.scr == viewing {
-			m.vp.Width, m.vp.Height = m.w, m.h-3
+			m.vp.Width, m.vp.Height = m.w-4, m.h-5
 		}
 		return m, nil
 	case spinner.TickMsg:
@@ -176,7 +176,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case viewReq:
 		m.scr, m.view = viewing, msg
-		m.vp = viewport.New(m.w, m.h-3)
+		m.vp = viewport.New(m.w-4, m.h-5)
 		m.vp.SetContent(msg.text)
 		return m, nil
 	case tea.KeyMsg:
@@ -203,7 +203,7 @@ func (m model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	switch s { // the log above any question
 	case "pgup":
-		m.logOff = min(m.logOff+max(1, m.logRows()-1), max(0, len(m.log)-m.logRows()))
+		m.logOff = min(m.logOff+max(1, m.logRows()-1), max(0, len(m.shownLog())-m.logRows()))
 		return m, nil
 	case "pgdown":
 		m.logOff = max(0, m.logOff-max(1, m.logRows()-1))
@@ -236,7 +236,7 @@ func (m *model) showHelp(text string) {
 	if text == "" {
 		return
 	}
-	vp := viewport.New(m.w, m.h-3)
+	vp := viewport.New(m.w-4, m.h-5)
 	vp.SetContent(text)
 	m.help = &vp
 }
@@ -372,42 +372,106 @@ func (m model) keyCheck(s string) (tea.Model, tea.Cmd) {
 }
 
 // ---------------------------------------------------------------- drawing --
+//
+// Layout, top to bottom, two columns in from the left:
+//
+//	 game-mod-sync  1.0.0   Main menu          title badge, version, screen
+//
+//	╭──────────────────────────────╮            messages since the last
+//	│ Synced.                      │            question (PgUp/PgDn), if any
+//	╰──────────────────────────────╯
+//	Which profile do you want to sync?          the question
+//	╭──────────────────────────────╮
+//	│ ❯ Valheim / MyProfile  → ... │            the list, in a box
+//	╰──────────────────────────────╯
+//	↑/↓ move • enter ok • ...                   its keys, right under it
+
+const margin = "  "
+
+var (
+	listBox = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(accent).Padding(0, 1)
+	logBox  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(subtle).Padding(0, 1)
+)
 
 func (m model) View() string {
 	if m.quitted {
 		return ""
 	}
-	title := "game-mod-sync " + m.version
+	head := barStyle.Render("game-mod-sync") + " " + dimStyle.Render(m.version)
 	if t := m.screenTitle(); t != "" {
-		title += "  ·  " + t
+		head += "   " + boldSt.Render(t)
 	}
-	bar := barStyle.Width(m.w).MaxWidth(m.w).Render(title)
-	if m.help != nil {
-		return bar + "\n" + m.help.View() + "\n" + hints("↑/↓ scroll", "any other key closes the help")
+	out := []string{"", head, ""}
+	switch {
+	case m.help != nil:
+		out = append(out, m.help.View(), "", hints("↑/↓ scroll", "any other key closes the help"))
+	case m.scr == viewing:
+		out = append(out, m.vp.View(), "", hints("↑/↓ PgUp/PgDn scroll", "enter/esc close"))
+	default:
+		body := m.widget()
+		if n := m.logRoom(len(body)); n > 0 {
+			if lines := m.logLines(n); len(lines) > 0 {
+				out = append(out, strings.Split(m.boxed(logBox, lines), "\n")...)
+			}
+		}
+		out = append(out, body...)
 	}
-	if m.scr == viewing {
-		return bar + "\n" + m.vp.View() + "\n" + hints("↑/↓ PgUp/PgDn scroll", "enter/esc close")
-	}
-	body, keys := m.widget()
-	bodyLines := strings.Split(body, "\n")
-	room := m.h - 2 - len(bodyLines) // bar + key line
-	var out []string
-	out = append(out, bar)
-	if room > 0 && len(m.log) > 0 {
-		show := m.logLines(room - 1)
-		out = append(out, show...)
-		out = append(out, dimStyle.Render(strings.Repeat("─", max(0, m.w))))
-		room -= len(show) + 1
-	}
-	out = append(out, bodyLines...)
-	for ; room > 0; room-- {
-		out = append(out, "")
-	}
-	out = append(out, keys)
 	for i, l := range out {
-		out[i] = lipgloss.NewStyle().MaxWidth(m.w).Render(l)
+		out[i] = lipgloss.NewStyle().MaxWidth(m.w).Render(margin + l)
+	}
+	if len(out) > m.h {
+		out = out[:m.h]
 	}
 	return strings.Join(out, "\n")
+}
+
+// inner is the widest a box's contents can be.
+func (m model) inner() int { return max(20, m.w-len(margin)*2-4) }
+
+// boxed draws lines in a box as wide as its widest line (up to the screen).
+func (m model) boxed(st lipgloss.Style, lines []string) string {
+	w := 0
+	for _, l := range lines {
+		w = max(w, lipgloss.Width(l))
+	}
+	w = min(max(w, 30), m.inner())
+	for i, l := range lines {
+		lines[i] = lipgloss.NewStyle().MaxWidth(w).Render(l)
+	}
+	return st.Width(w + 2).Render(strings.Join(lines, "\n"))
+}
+
+// logRoom is how many message lines fit above a question of n lines.
+func (m model) logRoom(n int) int {
+	return m.h - 3 - n - 2 // header, the question, the log box's borders
+}
+
+// logRows is how many log lines are shown now (PgUp/PgDn move by that).
+func (m model) logRows() int { return max(1, m.logRoom(len(m.widget()))) }
+
+// shownLog is the log without the blank lines at its start and end (the app
+// prints those as spacing for the text interface).
+func (m model) shownLog() []string {
+	l := m.log
+	for len(l) > 0 && strings.TrimSpace(l[0]) == "" {
+		l = l[1:]
+	}
+	for len(l) > 0 && strings.TrimSpace(l[len(l)-1]) == "" {
+		l = l[:len(l)-1]
+	}
+	return l
+}
+
+// logLines is the part of the log that fits in n lines (scrolled by PgUp/PgDn).
+func (m model) logLines(n int) []string {
+	log := m.shownLog()
+	end := max(0, len(log)-m.logOff)
+	start := max(0, end-n)
+	lines := append([]string(nil), log[start:end]...)
+	if start > 0 {
+		lines[0] = dimStyle.Render(fmt.Sprintf("↑ %d more line(s) - PgUp", start))
+	}
+	return lines
 }
 
 func (m model) screenTitle() string {
@@ -422,26 +486,6 @@ func (m model) screenTitle() string {
 	return ""
 }
 
-// logRows is how many log lines fit above the current question.
-func (m model) logRows() int {
-	body, _ := m.widget()
-	return max(1, m.h-3-strings.Count(body, "\n")-1-1)
-}
-
-// logLines is the part of the log that fits in n lines (scrolled by PgUp/PgDn).
-func (m model) logLines(n int) []string {
-	if n <= 0 {
-		return nil
-	}
-	end := len(m.log) - m.logOff
-	start := max(0, end-n)
-	lines := append([]string(nil), m.log[start:end]...)
-	if start > 0 {
-		lines[0] = dimStyle.Render(fmt.Sprintf("↑ %d more line(s) - PgUp", start))
-	}
-	return lines
-}
-
 func hints(pairs ...string) string {
 	var parts []string
 	for _, p := range pairs {
@@ -452,11 +496,11 @@ func hints(pairs ...string) string {
 		}
 		parts = append(parts, keySt.Render(k)+" "+dimStyle.Render(d))
 	}
-	return " " + strings.Join(parts, dimStyle.Render(" • "))
+	return strings.Join(parts, dimStyle.Render(" • "))
 }
 
-// widget is the current question and its key line.
-func (m model) widget() (string, string) {
+// widget is the current question, as lines.
+func (m model) widget() []string {
 	switch m.scr {
 	case choosing:
 		return m.viewChoose()
@@ -467,17 +511,18 @@ func (m model) widget() (string, string) {
 		} else {
 			no = btnOn.Render("No")
 		}
-		return boldSt.Render(m.conf.q) + "\n\n  " + yes + "  " + no, hints("←/→ choose", "enter ok", "y yes", "n/esc no")
+		return []string{boldSt.Render(m.conf.q), "", yes + "  " + no, "", hints("←/→ choose", "enter ok", "y yes", "n/esc no")}
 	case asking:
 		k := hints("enter ok", "esc back")
 		if m.ask.def != "" && !m.ask.password {
 			k = hints("enter ok (empty = "+m.ask.def+")", "esc back")
 		}
-		return boldSt.Render(m.ask.q) + "\n" + m.input.View(), k
+		box := strings.Split(listBox.Width(min(m.inner(), 60)+2).Render(m.input.View()), "\n")
+		return append(append([]string{boldSt.Render(m.ask.q)}, box...), k)
 	case checking:
 		return m.viewCheck()
 	}
-	return m.spin.View() + " " + m.status, hints("ctrl+c quit")
+	return []string{m.spin.View() + " " + m.status, "", hints("ctrl+c quit")}
 }
 
 // window returns the part of n items that fits in rows, keeping cur visible.
@@ -489,21 +534,66 @@ func window(n, cur, rows int) (int, int) {
 	return start, start + rows
 }
 
-func (m model) viewChoose() (string, string) {
+// columns lines up rows whose parts are separated by tabs: the first part
+// as is, the others dimmed (they're details: where a profile syncs to).
+func columns(rows []string) [][2]string {
+	var widths []int
+	split := make([][]string, len(rows))
+	for i, r := range rows {
+		split[i] = strings.Split(r, "\t")
+		for j, p := range split[i] {
+			if j >= len(widths) {
+				widths = append(widths, 0)
+			}
+			widths[j] = max(widths[j], lipgloss.Width(p))
+		}
+	}
+	out := make([][2]string, len(rows))
+	for i, parts := range split {
+		first := parts[0]
+		if len(parts) > 1 {
+			first += strings.Repeat(" ", widths[0]-lipgloss.Width(parts[0]))
+		}
+		var rest []string
+		for j, p := range parts[1:] {
+			if j < len(parts)-2 {
+				p += strings.Repeat(" ", widths[j+1]-lipgloss.Width(p))
+			}
+			rest = append(rest, p)
+		}
+		out[i] = [2]string{first, strings.Join(rest, "  ")}
+	}
+	return out
+}
+
+func (m model) viewChoose() []string {
 	mn := m.menu.m
 	var b []string
 	if mn.Question != "" {
-		b = append(b, boldSt.Render(mn.Question), "")
+		b = append(b, boldSt.Render(mn.Question))
 	}
-	rows := max(3, m.h-8)
+	rows := max(3, m.h-3-len(b)-3)
 	from, to := window(len(mn.Rows), m.cursor, rows)
+	cols := columns(mn.Rows)
+	var lines []string
+	if from > 0 {
+		lines = append(lines, dimStyle.Render(fmt.Sprintf("  ↑ %d more", from)))
+	}
 	for i := from; i < to; i++ {
+		first, rest := cols[i][0], cols[i][1]
+		if rest != "" {
+			rest = "  " + rest
+		}
 		if i == m.cursor {
-			b = append(b, curStyle.Render("❯ "+mn.Rows[i]))
+			lines = append(lines, curStyle.Render("❯ "+first)+curStyle.Render(rest))
 		} else {
-			b = append(b, "  "+mn.Rows[i])
+			lines = append(lines, "  "+first+dimStyle.Render(rest))
 		}
 	}
+	if to < len(mn.Rows) {
+		lines = append(lines, dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(mn.Rows)-to)))
+	}
+	b = append(b, strings.Split(m.boxed(listBox, lines), "\n")...)
 	keys := []string{"↑/↓ move", "enter ok"}
 	for _, k := range mn.Keys {
 		keys = append(keys, fmt.Sprintf("%c %s", k.Letter, strings.ToLower(k.Name)))
@@ -516,27 +606,24 @@ func (m model) viewChoose() (string, string) {
 	} else {
 		keys = append(keys, "esc back")
 	}
-	return strings.Join(b, "\n"), hints(keys...)
+	return append(b, hints(keys...))
 }
 
-func (m model) viewCheck() (string, string) {
+func (m model) viewCheck() []string {
 	c := m.check.c
 	var b []string
-	if c.Question != "" {
-		for _, l := range strings.Split(c.Question, "\n") {
-			b = append(b, boldSt.Render(l))
+	for i, l := range strings.Split(c.Question, "\n") {
+		if l == "" {
+			continue
 		}
-		b = append(b, "")
+		if i == 0 {
+			b = append(b, boldSt.Render(l))
+		} else {
+			b = append(b, warnSt.Render(l)) // notes: client-only mods, hidden files
+		}
 	}
-	if c.Header != "" {
-		b = append(b, dimStyle.Render("       "+c.Header)) // under the rows' text: cursor, arrow, box
-	}
-	// rendered lines (rows with their open details), and where the cursor is
-	type line struct {
-		s   string
-		row int
-	}
-	var lines []line
+	// rendered lines (rows with their open details), and the cursor's line
+	var lines []string
 	curLine := 0
 	for i, r := range c.Rows {
 		box := "[ ]"
@@ -550,27 +637,35 @@ func (m model) viewCheck() (string, string) {
 				arrow = dimStyle.Render("▾")
 			}
 		}
-		text := r
-		mark := "  "
+		mark, text := "  ", r
 		if i == m.cursor {
-			text, mark = curStyle.Render(r), curStyle.Render("❯ ")
+			mark, text = curStyle.Render("❯ "), curStyle.Render(r)
 			curLine = len(lines)
 		}
-		lines = append(lines, line{mark + arrow + box + " " + text, i})
+		lines = append(lines, mark+box+" "+arrow+" "+text)
 		if m.open[i] {
 			for _, d := range strings.Split(c.Details[i], "\n") {
-				lines = append(lines, line{dimStyle.Render("        " + d), i})
+				lines = append(lines, dimStyle.Render("        "+d))
 			}
 		}
 	}
-	rows := max(3, m.h-6-len(b))
+	rows := max(3, m.h-3-len(b)-4)
 	from, to := window(len(lines), curLine, rows)
-	for _, l := range lines[from:to] {
-		b = append(b, l.s)
+	var shown []string
+	if c.Header != "" {
+		shown = append(shown, dimStyle.Render("        "+c.Header)) // under the rows' text: cursor, box, arrow
 	}
+	if from > 0 {
+		shown = append(shown, dimStyle.Render(fmt.Sprintf("  ↑ %d more", from)))
+	}
+	shown = append(shown, lines[from:to]...)
+	if to < len(lines) {
+		shown = append(shown, dimStyle.Render(fmt.Sprintf("  ↓ %d more", len(lines)-to)))
+	}
+	b = append(b, strings.Split(m.boxed(listBox, shown), "\n")...)
 	keys := []string{"↑/↓ move", "space tick", "→/← open/close", "a/n all/none", "enter done", "esc back"}
 	if c.Help != "" {
 		keys = append(keys, "? help")
 	}
-	return strings.Join(b, "\n"), hints(keys...)
+	return append(b, hints(keys...))
 }

@@ -56,13 +56,14 @@ type Entry struct {
 	Game    *games.Game
 }
 
-// Label is the profile's line in menus.
+// Label is the profile's line in menus: the profile, a tab, where it syncs
+// to (the interfaces line the parts up in columns).
 func (a *App) Label(e Entry) string {
 	t, ok := a.State.Target(e.Source, e.Profile.Game, e.Profile.Name)
 	if !ok {
-		return fmt.Sprintf("%s / %s  (not set up yet)", e.Game.Name, e.Profile.Name)
+		return fmt.Sprintf("%s / %s\tnot set up yet", e.Game.Name, e.Profile.Name)
 	}
-	return fmt.Sprintf("%s / %s  -> %s on %s", e.Game.Name, e.Profile.Name, a.where(t), t.Host)
+	return fmt.Sprintf("%s / %s\t→ %s on %s", e.Game.Name, e.Profile.Name, a.where(t), t.Host)
 }
 
 func (a *App) where(t state.Target) string {

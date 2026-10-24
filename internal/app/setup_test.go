@@ -236,7 +236,7 @@ func TestEditForgetsServerAndPassword(t *testing.T) {
 		t.Errorf("password still saved: %v", store)
 	}
 	st, _ = state.Load(s.cfg)
-	if len(st.Targets) != 0 || !strings.Contains(out.String(), "(not set up yet)") {
+	if len(st.Targets) != 0 || !strings.Contains(out.String(), "not set up yet") {
 		t.Errorf("targets %v\n%s", st.Targets, out.String())
 	}
 }
