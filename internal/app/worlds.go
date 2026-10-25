@@ -99,7 +99,7 @@ func (a *App) Download(e Entry) error {
 		for i, x := range list {
 			rows[i] = x.Name + "\t" + x.Detail
 			if x.Name == running {
-				rows[i] += ", the server runs this one"
+				rows[i] += ", the server's world"
 			}
 		}
 		i, _, err := a.UI.Choose(ui.Menu{

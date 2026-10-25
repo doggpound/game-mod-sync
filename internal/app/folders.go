@@ -34,7 +34,7 @@ type FolderSync struct {
 	UI          ui.UI
 	Now         func() time.Time // for tests; nil = time.Now
 	Extra       Extra            // more to offer and copy in the same sync (configs); may be nil
-	Title       string           // heading of the review, e.g. "Valheim / MyProfile  ->  Valheim01 on host"
+	Title       string           // heading of the review, e.g. "Valheim / MyProfile  →  Valheim01 on host"
 	Applied     bool             // set when changes were made on the server
 }
 

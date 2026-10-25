@@ -99,7 +99,7 @@ func TestSyncOneProfile(t *testing.T) {
 		exists(filepath.Join(s.root, "BepInEx", "plugins", "Old")) {
 		t.Errorf("server not synced:\n%s", out)
 	}
-	for _, want := range []string{"Valheim / MyProfile  ->  Valheim01 on 127.0.0.1", "+ new      Azumatt-AzuClock", "Restart the server"} {
+	for _, want := range []string{"Valheim / MyProfile  →  Valheim01 on 127.0.0.1", "+ new      Azumatt-AzuClock", "Restart the server"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}

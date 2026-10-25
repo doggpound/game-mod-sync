@@ -248,7 +248,7 @@ func (a *App) Sync(e Entry) error {
 	defer c.Close()
 
 	a.UI.Say("")
-	a.UI.Say(fmt.Sprintf("%s / %s  ->  %s on %s", g.Name, p.Name, a.where(t), t.Host))
+	a.UI.Say(fmt.Sprintf("%s / %s  →  %s on %s", g.Name, p.Name, a.where(t), t.Host))
 	keep, err := a.serverManaged(c, e, &t)
 	if err != nil {
 		return err
@@ -258,7 +258,7 @@ func (a *App) Sync(e Entry) error {
 		Client: c, Local: p.Dir, Root: t.Root, Dirs: g.SyncDirs, Excludes: ex,
 		KeepBackups: a.State.Config.KeepBackups,
 		DryRun:      a.Opts.DryRun, Yes: a.Opts.Yes, Verbose: a.Opts.Verbose, UI: a.UI,
-		Title: fmt.Sprintf("%s / %s  ->  %s on %s", g.Name, p.Name, a.where(t), t.Host),
+		Title: fmt.Sprintf("%s / %s  →  %s on %s", g.Name, p.Name, a.where(t), t.Host),
 	}
 	if x := a.configExtra(e, c, t.Root); x != nil {
 		fs.Extra = x
