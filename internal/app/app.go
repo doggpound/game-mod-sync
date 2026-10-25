@@ -391,7 +391,7 @@ func (p *passwords) offerToSave() {
 	p.ui.OK("Saved - it won't be asked again.")
 }
 
-// Run parses the command line (the same options as the bash version) and runs.
+// Run parses the command line and runs.
 // The interface is the full screen with --tui (or default_ui = "tui" in the
 // settings, unless --cli), when in and out are a terminal; else text.
 func Run(args []string, in io.Reader, out io.Writer, version string) error {
@@ -445,7 +445,7 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 	}
 	a := &App{UI: u, State: st, Opts: o, Version: version}
 	if st.Migrated {
-		u.Say("Read the settings of the bash version from " + st.Dir + " (it keeps its own files).")
+		u.Say("Read the settings of game-mod-sync 0.x from " + st.Dir + " (its own files are left in place).")
 	}
 	switch {
 	case refresh:

@@ -1,6 +1,6 @@
 // Package transfer compares a local folder with one on the server by content
 // and makes the server's match it: what rsync -rlc --delete --backup did in
-// the bash version, over SSH and SFTP only.
+// 0.x (shell scripts), over SSH and SFTP only.
 package transfer
 
 import (

@@ -16,7 +16,7 @@ import (
 )
 
 // Server types offered at setup.
-const otherName = "ssh" // kept from the bash version, where it was "Other (SSH)"
+const otherName = "ssh" // the name 0.x settings use for it
 
 var serverTypes = []struct{ name, label, help string }{
 	{amp.Name, "CubeCoders AMP (finds the game folders of its instances)",

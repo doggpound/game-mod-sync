@@ -1,15 +1,15 @@
-// game-mod-sync (Go version, in progress - see docs/DESIGN-GO.md).
+// game-mod-sync syncs the mods of a mod-manager profile (Gale) to a game
+// server over SSH or SFTP, and copies worlds back to try mod updates on.
 //
 // Without a command it's the program: the profile menu, or one profile with
-// -p, with the bash version's options. Profiles are set up with the bash
-// version for now; config files, the full-screen interface and world
-// download come in later phases.
-//
-// "sync" syncs any folders to a server, without profiles or settings:
+// -p (see --help). "sync" syncs any folders to a server, without profiles or
+// settings:
 //
 //	game-mod-sync sync --host game.example.com --user amp \
 //	    --local /path/to/profile --root /path/to/game/on/server \
 //	    [--dir BepInEx/plugins] [--exclude MMHOOK/] [-n] [-y]
+//
+// How it works: docs/DESIGN.md.
 package main
 
 import (
@@ -53,7 +53,7 @@ func run(args []string, in io.Reader, out io.Writer) error {
 }
 
 func usage(out io.Writer) {
-	fmt.Fprintf(out, `game-mod-sync %s (Go version, in progress) - sync mod-manager profiles to game servers
+	fmt.Fprintf(out, `game-mod-sync %s - sync mod-manager profiles to game servers
 
 Usage:
   game-mod-sync [options]        the profile menu, or one profile with -p

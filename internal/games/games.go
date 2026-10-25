@@ -43,7 +43,7 @@ type Game struct {
 	Worlds       Worlds              `toml:"worlds"`
 }
 
-// Worlds are the world download's settings (see the bash DESIGN.md).
+// Worlds are the world download's settings (see docs/DESIGN.md).
 type Worlds struct {
 	Format       string            `toml:"format"` // world format; empty = no world download
 	Files        []string          `toml:"files"`  // for format "files": the extensions
