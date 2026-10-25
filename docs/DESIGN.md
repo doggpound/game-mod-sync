@@ -1,425 +1,197 @@
 # Design
 
-> A Go version is being written so the tool runs as one downloaded file on Windows, Linux and
-> macOS. Its plan is in [DESIGN-GO.md](DESIGN-GO.md). This page describes the bash version, which
-> stays the reference for how things behave until the Go version replaces it.
+game-mod-sync is one Go program, built for Windows, macOS and Linux with nothing else to install.
+It reaches a server over one SSH connection, and everything it does works on **SFTP alone**, since
+most game hosts give out SFTP details and don't let you run commands. (Versions 0.x were shell
+scripts around rsync; their settings are still read, see [Settings](#settings).)
 
-`game-mod-sync` connects five kinds of plugins. Each is a small file, so adding support for
-something new means adding a file, not changing the core.
+## Layout
 
 ```
-plugins/sources/<name>.sh    where profiles come from        gale
-plugins/loaders/<name>.sh    where a mod loader keeps mods   bepinex
-                             and configs
-plugins/games/<id>.conf      game-specific settings          _default, valheim
-plugins/backends/<name>.sh   how to find the game folder     amp, ssh
-                             on a type of server
-plugins/worlds/<name>.sh     how a game saves a world        valheim, files
-                             (world download only)
+main.go                       options, picks the interface, runs the app
+plugins/                      everything particular to a mod manager, mod loader,
+  sources/ loaders/ servers/  server type, world format or game: one folder each,
+  worlds/ games/ all/         registered in plugins/all (see plugins/README.md)
+internal/
+  plugin/       the plugin interfaces and the registry
+  app/          the flow: menus' content, setup, sync, configs step, world download, Edit
+  ui/           the interface the app talks to; text/ and tui/ implement it
+  remote/       SSH connection + SFTP, logins, known_hosts, ~/.ssh/config, finding game folders
+  transfer/     compare by content and apply (the rsync replacement), the manifest
+  configs/      config comparison, which mod a file is from, client/server tags
+  worlds/       world download's shared part: reading worlds through an FS, Mirror
+  games/        game settings: loader defaults + game files + the user's own files
+  state/        config.toml and targets.toml; reading 0.x settings
+  secrets/      passwords in the system's credential store
+  update/       "a newer release exists"
+  testserver/   a real SSH + SFTP server for the tests (and the screenshot demo)
+docs/           this page, badges (make.py), screenshots (make.sh, demo/)
 ```
 
-Plugins are found automatically: every `*.sh` in `plugins/sources/`, `plugins/loaders/`,
-`plugins/backends/` and `plugins/worlds/` is loaded. Server types are listed alphabetically, with `ssh` (the catch-all) always last.
+The program never names a plugin: it asks the registry (`internal/plugin`) for the mod managers,
+loaders, server types and world formats, and each plugin registers itself in an `init` function.
+`plugins/all` imports them all; a test fails if a plugin folder isn't in it. Optional abilities are
+small extra interfaces a plugin implements only if it has them (`ModTagger`, `ConfigOwner`,
+`ManagedFiles`, `SaveFinder`, `Fallback`). How to write one: [plugins/README.md](../plugins/README.md).
 
-**Your own plugins** go in `~/.config/game-mod-sync/plugins/` with the same folders. They
-are loaded together with the repo's. A file with the same name as a repo plugin replaces it
-(e.g. your own `backends/amp.sh`). For games, both are loaded in order, so your
-`games/valheim.conf` only needs the lines it changes. `--config` shows which file each plugin
-was loaded from. Plugin names must be valid shell identifiers (letters, digits, `_`), because
-they become function prefixes; other files are ignored.
+## Comparing by content
 
-The flow for a run:
+Each computer's mod manager downloads and unpacks its own copy of each mod, so file times differ
+between computers; comparing by time would send everything again from another computer. Files are
+compared by **SHA-256 of their contents**:
 
-1. Every source lists its `game id / profile / folder`. Profiles whose game has nothing to sync
-   (no `SYNC_DIRS` folder) are hidden.
-2. You pick a profile. Its mod loader is detected from the profile folder (`<loader>_detect`), the
-   loader's defaults are set, then `plugins/games/<id>.conf` is loaded on top.
-3. If the profile has no saved target, a backend lists candidate folders on the server. You pick
-   one, and it is saved to `targets.tsv`.
-4. Each folder in `SYNC_DIRS` is previewed. `CONFIG_DIRS` are compared file by file and offered in
-   a checklist (see [Configs](#configs)). Then a review (`sync_review`: the mod changes and the picked
-   config files) and one confirmation; mods are mirrored and the picked configs copied.
-
-## Why content comparison
-
-rsync's default "changed" test is size plus modification time. Each computer's Gale downloads
-and unpacks its own copy of each mod, so timestamps differ between computers. Syncing from a
-different computer would re-send everything. The script uses `rsync -c` (checksums) and doesn't
-preserve times (`-rl`, no `-t`), so only real content changes are sent. The cost is reading every
-file on both sides, which is negligible at mod-folder sizes (about 160 MB).
+- **The server's side**: when the login can run commands (checked once per connection with
+  `true`), one command per folder: `find . -type f -print0 | xargs -0 -r sha256sum -z`. Otherwise
+  (SFTP only), the files are listed over SFTP and read to hash them, except those the **manifest**
+  already knows: `.mod-sync-backups/manifest.json` on the server records each file's hash with the
+  size and time it had. A file with the same size and time isn't read again; one changed by
+  anything else gets a new time and is read once. So only the first SFTP-only sync reads every
+  file. The manifest is shared by everyone who syncs to that server.
+- **This computer's side**: hashed locally.
+- **Excludes** follow rsync's pattern rules as the game files use them: `MMHOOK/` (a folder, at any
+  depth), `/ValheimPlus.dll` (only at the top), `*.dat`, `**`. Excluded paths are never sent and
+  never deleted, nor the folders holding them.
 
 ## Safety rules
 
-- `--delete` is used, so only folders the mod manager fully owns belong in `SYNC_DIRS`.
-  Config folders are never mirrored: they're `CONFIG_DIRS`, copied only per picked file and
-  never deleted, because server configs often differ on purpose (many mods push the server's
-  config to clients).
-- `EXCLUDES` are server-side files that must survive: they're never sent and never deleted
-  (rsync protects excluded paths from `--delete`).
-- If a sync folder is empty in the profile, it's skipped. If nothing is left to sync, the run is refused.
-- Replaced or deleted files go to `<game root>/.mod-sync-backups/<timestamp>/<sync dir>/` (rsync
-  `--backup-dir`). That folder sits outside the loader's folders, so it's never loaded.
-  `KEEP_BACKUPS` (default 5) sets how many are kept. AMP discovery ignores this folder.
-- New files get `755/644` permissions (`--chmod`), so Windows (WSL) permissions don't leak onto the server.
-- Every run previews first and asks before changing anything, unless `-y` is given.
+- Every run shows what will change and asks before changing anything (`-y` doesn't ask; `-n`
+  changes nothing).
+- Only folders the mod manager fully owns are mirrored (`SyncDirs`, with deletions). Config
+  folders are never mirrored: files are offered one by one and nothing is deleted there, because
+  servers often have their own settings on purpose.
+- A sync folder that's empty in the profile is skipped, and if nothing is left the run is refused:
+  syncing it would wipe the server's mods.
+- Replaced or deleted files are first **moved** (a rename on the same disk, instant) to
+  `<game folder>/.mod-sync-backups/<time>/<folder>/`, outside the folders the mod loader reads.
+  The newest `keep_backups` (5) are kept.
+- New content is written to a temporary name next to its target and renamed into place, so a
+  dropped connection never leaves half a file. Permissions 644 / 755.
+- A question that gets no answer because the input ended (scripts) takes its default, which is
+  always the safe one (don't apply; leave a server-installed file alone).
 
 ## Server-managed files
 
-Some server types install mods themselves. For example, AMP's Valheim template has an
-"Install ValheimPlus" option. With that option on, every AMP update unpacks `ValheimPlus.dll` into
-`BepInEx/plugins/`. A plain mirror would delete that file on every sync.
+Some server types install mods themselves: AMP's Valheim template has "Install ValheimPlus", which
+unpacks `ValheimPlus.dll` into `BepInEx/plugins` on every update. A plain mirror would delete it on
+every sync. A game file names such files per server type (`[managed] amp =
+["valheim_plus_install=ValheimPlus.dll"]`); the server type (`ManagedFiles`) says which are on
+(AMP: `App.AppSettings` in the instance's `.kvp`, read over SFTP). The first time a file is
+reported, the person is asked whether to leave it alone (default yes); the answer is kept in the
+target (`kept`: `+pattern` leave alone, `-pattern` sync over), and kept patterns are excluded
+anchored to the top of the sync folder, so a copy inside a mod's own folder still syncs.
 
-- A game file lists what each server type can install: `MANAGED_amp="valheim_plus_install=ValheimPlus.dll"`
-  (`setting=pattern[,pattern]`, with patterns relative to the sync folder).
-- The backend's optional `<name>_managed` hook reports which of those settings are on for the chosen
-  instance. AMP reads `App.AppSettings` from `<instance>/*.kvp`.
-- The first time a file is reported, you're asked "Leave it alone?" (default yes; `-y` answers yes).
-  The answer is stored in column 7 of `targets.tsv` (`+pattern` keeps the file, `-pattern` syncs over it),
-  and `--setup` clears it.
-- Kept patterns are anchored (`--exclude=/ValheimPlus.dll`), so a copy inside a mod's own folder
-  (e.g. Gale's `Grantapher-ValheimPlus.../ValheimPlus.dll`) still syncs.
-- If the profile also contains the file, you're warned that the server will have two copies. The
-  cleanest fix is to turn the server option off and let the profile provide the mod.
-- If the server option is later turned off, the file is no longer reported. The next sync then
-  proposes removing the leftover copy.
+## Config files
 
-## Configs
+Each config folder is compared like the mods; files that are new or differ are offered in a
+checklist, never deleted. To show what differs, the server's copies of differing files are read
+over SFTP: `.cfg` files are compared per `[Section] Key = value` (`Lock Configuration: Off -> On`),
+other files as a line diff (a small longest-common-subsequence diff). Files that differ only in
+comments, blank lines, spacing or line endings are dropped, as are files from mods no longer in
+the profile (`-v` shows them).
 
-`lib/configs.sh`, used for every `CONFIG_DIRS` folder:
+- **Which mod**: a loader that implements `ConfigOwner` maps plugin ids to mod folders. BepInEx
+  reads each DLL's `[BepInPlugin(id, name, version)]` attribute blob (01 00, then three
+  length-prefixed strings): reading the declaration, not any mention of the id, avoids matching
+  mods that only depend on it. A file belongs to the mod with the longest id it starts with; then
+  a mod folder with the same name (ignoring case and punctuation, also with parts cut off the end),
+  then a unique mod whose name is the file name's last part.
+- **Client or server**: Thunderstore categories (game file: `tag_client`, `tag_server`), from the
+  tag cache (`thunderstore-tags.tsv` in the cache folder; a package Thunderstore doesn't have is
+  cached with no tags), then mod managers that know them offline (`ModTagger`: Gale's
+  `thunderstore_cache.json`), then Thunderstore (6 at a time, 10 s each; a network error caches
+  nothing). Client-only mods' files are listed but never copied.
+- **Defaults**: new files ticked (if their mod is known), differing ones not; `-y` copies new ones.
 
-1. **Compare.** `rsync -n -c` without `--delete` itemizes files that are new (`<f+++++++++`) or
-   differ. `CONFIG_SKIP` patterns are left out (BepInEx: `/BepInEx.cfg`, the loader's own settings,
-   and `*.dat`, per-player data).
-2. **What differs.** The server's copies of differing files are fetched to a temp folder and
-   compared after dropping comments, blank lines, indentation and line endings. `.cfg` files are
-   compared per `[Section] Key = value`, so the checklist can say `Range: 10 -> 20`. Files that
-   only differ in formatting (BepInEx rewrites comments when versions change) are dropped.
-3. **Which mod.** BepInEx names config files after the plugin's id (`Azumatt.FastLink.cfg`,
-   `ArgusMagnus.ServersideQoL/` for a folder). `bepinex_config_owners` reads each DLL's
-   `[BepInPlugin(id, name, version)]` attribute blob, which gives exact `id -> mod folder` pairs.
-   Reading the declaration matters: a plain search for the id also hits mods that only list it
-   as a dependency. A file belongs to the mod with the longest id it starts with. Fallbacks: a
-   mod folder with the same name ignoring case and punctuation (also for shortened names like
-   `Azumatt.FastLink_servers` and `XRayVision_ModeratorList`), then a unique match on the last
-   part of the name. Tested on a real 55-mod Valheim profile: every config whose mod is
-   installed was matched; the unmatched ones were all left over from removed mods, and those
-   are hidden unless `-v`.
-4. **Client or server.** Thunderstore categories (`Client-side`, `Server-side` for Valheim;
-   regexes `TAG_CLIENT`/`TAG_SERVER` in the game file). Cached for good in
-   `~/.cache/game-mod-sync/thunderstore-tags.tsv`; only mods not in it are looked up. Before
-   going online, the source's own cache is used (Gale's `thunderstore_cache.json` via
-   `gale_mod_tags`). Lookups use
-   `https://thunderstore.io/api/experimental/package/<author>/<name>/` (6 in parallel, curl +
-   perl's JSON::PP). A package Thunderstore doesn't have is cached with no tags, so it isn't
-   asked for on every sync; a network error caches nothing. Edit → Refresh mod tags
-   (`tags_refresh`, `--refresh-tags`) looks up every mod of every profile again.
-   Client-side without Server-side = client only: not offered. No tag means the file is offered
-   normally.
-5. **Choose.** `ui_checklist`: new files ticked (if the mod is known), differing ones unticked.
-   Rows are aligned columns built by `cfg_layout` (status, side, mod, file; long paths keep their
-   end) with column titles (`UI_LIST_HEADER`), sorted new first, then by mod. Each differing
-   row carries its details (`UI_DETAILS`, from `cfg_diff_full`: every differing setting with
-   both values, or a line diff for non-`.cfg` files), which the TUI list expands in place. The
-   text version, and a terminal too small for the drawn list, offer "Show the full differences"
-   (`UI_EXTRA`) instead. whiptail/dialog
-   can't disable a checklist row, so client-only mods are named above the list instead. `-y`
-   takes the defaults (new files only).
-6. **Copy.** `rsync --files-from` with the same `--backup-dir` as the mods, no `--delete`.
+The mod changes and the picked config files are reviewed together and applied with one backup time.
 
-Items are kept as fields separated by `\x1f`, not tabs: `read` merges consecutive tabs, which
-shifts fields when one is empty.
+## World download
 
-## World download (`lib/worlds.sh`)
+D on a profile (or `--download-world`) copies a world from the server into this computer's saves.
+Nothing on the server is written.
 
-A one-way copy of a world from a profile's server into this computer's saves, so mod updates can
-be tried on a copy before they're synced. Nothing on the server is written. Entry points: **D** on
-a profile in the main menu (`UI_KEYS="e:Edit d:Download"`), or `-p PROFILE --download-world`
-(`--world NAME` picks the world; `-y` alone takes the one the server runs; `-n` stops after the
-summary). The core knows no game's save layout: a **world format** plugin describes it, and the game
-file says which format and where.
+- **Formats** (`plugin.WorldFormat`): Valheim's chunked world folders (`_main.<N>.fwl2/.db2/.chunks`,
+  `_main.<N>.ok` written last, `*.chunk`; the game's own `*_backup*` worlds listed last, newest
+  first) and `files` (`<world>.<ext>`). A format lists worlds, names a world's paths and gives a
+  save stamp; it reads through `worlds.FS`, so the same code reads the server and this computer.
+- **Folders**: on the server, one typed in before for the profile, else the server type's
+  (`SaveFinder`: AMP's `-savedir` from the instance's settings, which also name the world it runs),
+  else the game's usual folder under the login's start; when none exists it asks and remembers. On
+  this computer, under the Windows user folder (natively or seen from WSL) or `$HOME`; it asks once
+  when there are several.
+- **A consistent copy while the server runs**: the stamp is read before and after the copy and from
+  the copy. When they differ, a save happened: copy again (3 tries; files that vanished mid-copy
+  count as a save). Valheim's stamp is the newest save number with its `.ok` and all three `_main`
+  files; a save only removes the previous save's files after its `.ok` (worked out from a live
+  server's folders, not documented). Copies go to a cache folder first and only files whose size
+  or time changed are fetched again.
+- **Install**: this computer's copy is moved to `game-mod-sync-backups/<time>/` next to the worlds
+  folder, then the copy is put in place; if that fails, the old one is moved back.
 
-| Piece | Gives |
-|---|---|
-| World format (`plugins/worlds/<f>.sh`) | `<f>_list_sh` (shell code listing worlds + details), `<f>_paths WORLD` (names in the worlds folder that make it up), `<f>_stamp_sh WORLD` (shell code printing what changes with every save; empty = no complete save) |
-| Game file | `WORLD_FORMAT`, `SERVER_SAVES`, `SERVER_WORLDS`, `SAVES_<backend>`, `LOCAL_WORLDS_WIN`, `LOCAL_WORLDS_HOME`, `WORLD_NOTE` (see `plugins/games/_default.conf`) |
-| Server type (optional) | `<name>_saves TARGET ROOT SPEC`: save folder and running world (AMP: `-savedir` from `App.CommandLineArgs`, `WorldName` from `App.AppSettings`) |
+## Logging in
 
-The format's code is plain `sh` run with `cd` into a worlds folder, so the same snippet works on the
-server (over ssh) and on the downloaded copy.
+`golang.org/x/crypto/ssh` with `pkg/sftp`. Logins try the SSH agent (Linux `SSH_AUTH_SOCK`; on
+Windows the OpenSSH agent pipe, which password managers' agents also serve), keys from
+`~/.ssh/config` and `~/.ssh`, then a password: the saved one first, then asking (3 tries, so a
+password the host changed is simply asked again). After a login with a typed password the program
+offers to save it in the system's credential store (`internal/secrets`; Windows Credential
+Manager, macOS Keychain, Linux Secret Service); without one it asks each time. `~/.ssh/config`
+can give a server's real address, port and keys, like the `ssh` command. An unknown server's
+fingerprint is shown once and saved to `known_hosts`; a changed one is refused. Only the kinds of
+host key already saved are asked for, as `ssh` does (a server usually has several and
+`known_hosts` often holds one). Setup's connection is reused for the sync right after it.
 
-1. **Server folder.** A folder typed in once for the profile (column 8 of `targets.tsv`), else the
-   server type's save folder + `SERVER_WORLDS`, else `SERVER_SAVES/SERVER_WORLDS` under the SSH
-   user's home. If none exists, it asks and remembers. Re-running setup clears it.
-2. **Local folder.** `LOCAL_WORLDS_WIN` under each Windows user folder seen from WSL
-   (`/mnt/*/Users/*`, shared with Gale's search as `WIN_USERS_GLOB`) or `$USERPROFILE` (Git Bash),
-   and `LOCAL_WORLDS_HOME` under `$HOME`. One is used as is; several are offered once and the pick
-   saved as `LOCAL_WORLDS` (`game=folder|...`) in the config.
-3. **Consistent copy.** The server keeps running, so the copy can't be a snapshot. Instead: read
-   the stamp, `rsync -rlt --delete` the world's paths (`--include=/<path>` and `/<path>/***`, then
-   `--exclude=*`) into `~/.cache/game-mod-sync/worlds/<game>/`, read the stamp again, and read the
-   copy's stamp. All three equal = no save landed during the copy. Otherwise copy again (only the
-   changes travel), up to 3 times. rsync's exit 24 (files vanished) means a save happened; the stamps
-   decide. For Valheim the stamp is the newest save number with its `.ok` and all three `_main`
-   files. That relies on the game writing the `.ok` last and only then removing the previous
-   save's files, which is what its folders show on a live server; Iron Gate doesn't document the
-   format.
-4. **Install.** This computer's copy of the world's paths is moved (a rename, same disk) to
-   `<worlds folder>/../game-mod-sync-backups/<time>/` (outside the worlds folder, so the game
-   doesn't list it; `KEEP_BACKUPS` kept), then the cached copy is put in place. If that fails, the
-   old copy is moved back.
+## Interfaces
 
-## Drawn menus and checklists (`lib/ui-tree.sh`)
+The app never prints or reads directly; it calls `ui.UI`: `Choose` (a menu with row keys such as E
+and D), `Check` (a checklist with details per row), `Ask`, `Password`, `Confirm`, `View`, and
+messages (`Info` for what's happening, `Say`, `OK`, `Warn`).
 
-whiptail and dialog have no expandable rows, no header bar for columns and no way to catch a
-key like H in a menu. So in the TUI, `ui_choose` and `ui_checklist` draw their own box with
-ANSI escapes (`_tree_list`): same colours as the dialog tool (newt's Ubuntu palette is magenta,
-otherwise blue), the header bar in the table colour 20% darker (the terminal is asked for that
-colour's RGB with OSC 4; without an answer, a fixed dark shade from the 256-colour palette), rows
-in bright white with the cursor row in red, open details in soft grey, key lines like "E - Edit"
-and "H - Help Menu", and buttons (`Ok Back`, or `Ok Exit` on the main menu) that Tab / Shift+Tab
-move between, starting at Ok. Row keys (`UI_KEYS="e:Edit"`) act on the highlighted row and
-return 4 with `UI_PRESSED`; the Edit menu opened that way works on that profile (`EDIT_PRESET`). H opens a help overlay (`_tree_help`, scrollable, one Close button) with
-the screen's `ui_help` text plus its keys. Keys are read one at a time from the terminal
-(`read -rsn1`), escape sequences decoded for arrows and PgUp/PgDn/Home/End. The box sizes itself
-to its content and redraws in place; a resize or a change in size (rows opened/closed) redraws
-the background too. Input boxes, yes/no, messages and progress bars stay whiptail/dialog.
-Below 60x16 the plain whiptail/dialog menu and checklist are used.
+- **Text** (`internal/ui/text`): numbered menus and prompts; works without a terminal, so scripts
+  get it.
+- **Full screen** (`internal/ui/tui`, Bubble Tea): one screen for the whole session; each question
+  is a view on it. The app runs in its own goroutine; each call sends a request to the screen and
+  waits for the answer, and Ctrl+C makes every waiting call return "exit". The messages since the
+  last question are shown above it in a box (PgUp/PgDn when they don't fit), a spinner shows the
+  last `Info` while the app works, and the last messages are printed to the terminal at the end.
 
-## Text and TUI: one core, two interfaces
+Full screen is the default; `--cli` / `--tui` choose for one run, `default_ui` in the settings
+(Edit → Default interface) for every run. Without a terminal it's always text. On Windows, a
+program started by double-click waits for Enter before its window closes.
 
-`game-mod-sync` is a small launcher. It picks the interface first, because the core loads
-`lib/ui-<interface>.sh` as it starts: `--tui` / `--cli` on the command line, else `DEFAULT_UI`
-from the config file (`cli` or `tui`, set in Edit → Default interface; read with `sed`, before
-the config is loaded), else text. A saved `tui` falls back to text without a terminal (scripts,
-cron). It sets `GMS_UI` (`text` or `tui`) and `GMS_UI_FROM` (shown by `--config`), loads
-`lib/core.sh` and calls `gms_main`, which ignores `--tui` / `--cli`.
-All behaviour lives in the core. The core never prints or
-reads directly; it only calls the UI functions below, which `lib/ui-text.sh` and `lib/ui-tui.sh`
-both implement:
+## Settings
 
-| Function | Text UI | TUI |
-|---|---|---|
-| `info MSG` | `==> MSG` line | short status box while work runs |
-| `say MSG` / `ok MSG` / `warn MSG` | printed right away | collected and shown at the top of the next box |
-| `die MSG` | `error:` line, exit 1 | error box, exit 1 |
-| `ui_ask PROMPT [DEFAULT]` | `PROMPT [DEFAULT]:` (answer in `ANSWER`) | input box; Back returns 1 |
-| `ui_choose [--no-cancel] QUESTION LABEL...` | numbered list (sets `CHOICE`), `b` returns 1 | menu; the Cancel button is labelled Back and returns 1 (`--no-cancel` hides it; the main menu has Exit) |
-| `ui_checklist Q LABEL on\|off ...` | numbered list with `[x]`, type numbers to toggle (sets `CHECKED`) | checklist |
-| `ui_confirm Q` / `ui_confirm_yes Q` | `[y/N]` / `[Y/n]` | yes/no box, No / Yes preselected |
-| `ui_wait MSG CMD...` | `==> MSG` + spinner and seconds | progress bar with elapsed seconds |
-| `ui_gauge MSG CMD...` | `[#####   ] 42%` bar | progress bar (CMD prints percentages) |
-| `ui_help TEXT` | `h` prints it | H opens it as an overlay (keys are added) |
-| `UI_DETAILS=(TEXT...)` before `ui_checklist` | ignored | rows expand with Right / collapse with Left |
-| `ui_title TITLE` | heading above the next menu/checklist | title of the next box (the screen behind shows `game-mod-sync <version>`) |
-| `ui_view TEXT` | printed | scrollable box |
-| `UI_EXTRA=LABEL` before `ui_checklist` | `d` returns 3 | first row "> LABEL (tick, then OK)" returns 3 (whiptail has no third button) |
-| `UI_LIST_HEADER=TEXT` before `ui_checklist` | column titles above the rows | same, indented to line up with the rows |
-| `ui_suspend MSG` / `ui_resume` | prints MSG | leaves the full screen so a command can prompt, then returns |
-| `ui_report` | nothing (already printed) | box with the results, waits for OK |
-| `ui_start` / `ui_finish` | nothing | enter the full screen / final results box, leave the screen, echo results |
+`config.toml` and `targets.toml` in `%APPDATA%\game-mod-sync` (Windows) or
+`$XDG_CONFIG_HOME` / `~/.config/game-mod-sync`. `targets.toml` has one entry per profile: mod
+manager, game, profile, server type, host, port, user, game folder, the answers about
+server-managed files, and a worlds folder when one had to be typed. The first time, the 0.x
+settings in the same folder (`config`, shell syntax, and `targets.tsv`) are converted (they're
+left in place), and profiles set up with 0.x later are picked up too. Users' own game files go in
+`plugins/games/` there.
 
-**No flicker.** Each wait is one gauge window that stays open and is updated through its input
-(the `XXX` protocol), never a box relaunched in a loop. A wait's length is unknown, so its bar eases
-towards 95% (about halfway after 7 seconds), shows the elapsed seconds and fills when the command
-ends. The command's exit status is written to a file, because the feeder runs in a pipeline
-subshell that can't reap it. While rsync is still checksumming before a copy, the copy bar ticks
-"checking files (Ns)" once a second.
+## Builds and releases
 
-**Main menu.** Without `-p`, the profile menu has an Exit entry and comes back after each sync,
-"already in sync" or cancelled confirmation, once you've pressed OK on the result. **Edit** opens a
-second menu (`edit_menu` in `lib/core.sh`) built only from the shared UI calls, so both commands
-get it: re-run setup, a checklist over the `kept` column of `targets.tsv` (patterns from the game's
-`MANAGED_<backend>` plus any answered before), remove a target, open the config in `$EDITOR`
-(through `ui_suspend`/`ui_resume`, then `bash -n` and reload), and show file locations. Back
-returns 1 from any prompt; `setup_target` passes that up, so backing out of a setup saves nothing. `-p` (or a single profile with `-y`) syncs once.
+`go build .` makes the program. Releases (`.forgejo/release.sh`, run by `release.yml` when a merge
+raises the version in `VERSION`) build it with `CGO_ENABLED=0` for Windows, macOS and Linux on
+amd64 and arm64, package each with the README (`.zip` for Windows, `.tar.gz` otherwise), add
+`SHA256SUMS`, and publish them on Forgejo and the GitHub mirror. The version is set at build time
+(`-X main.version=...`). At start the program asks the mirror for its latest release, at most once a
+day with a short timeout, and says when a newer one exists (not for development builds;
+`update_check = false` turns it off). Builds aren't code-signed, so Windows' SmartScreen and macOS'
+Gatekeeper warn the first time.
 
-Every wait on the network goes through `ui_wait` (connecting, finding instances, reading AMP
-settings, comparing, preparing folders, tidying backups); the copy itself goes through `ui_gauge`.
-`ui_wait` runs the command in the background with its output in temp files (`WAIT_OUT`,
-`WAIT_ERR`), so errors can be shown in the error message. For the copy, `rsync_percent` turns
-rsync's `--info=progress2` into percentages. rsync checksums every file before it starts sending
-(`-c`), so the bar says "checking files" until real progress begins, then "copying". The stream is
-parsed with bash `read`: `awk` and `tr` buffer piped input and would deliver every update at the end.
+## Tests
 
-**One screen.** whiptail and dialog normally switch the terminal to its alternate screen when they
-start and back when they exit, so the shell would flash between every box. The TUI switches once
-at the start (`ui_start`) and once at the end, and runs the tools with a copy of the terminal
-description that has those switches removed. The copy is built with `infocmp`/`tic` and cached in
-`~/.cache/game-mod-sync/terminfo`; without those tools it still works, it just flashes. Only the
-main shell may switch screens, because a subshell's exit would switch back early.
+`go test ./...`. The end-to-end tests run against `internal/testserver`: a real SSH and SFTP server
+on a temporary folder, in a normal and an SFTP-only mode, with a second host key when needed, so
+they need no network and no `ssh` program. The full screen is tested by feeding keys to its model.
+CI (`.forgejo/workflows/tests.yml`, on pull requests) checks formatting, `go vet`, the tests, that
+every platform compiles, the badges and the screenshots. A Go cache (toolchain, modules, build
+cache) is kept between runs, filled on `main` by `go-cache.yml`.
 
-**SSH prompts.** Connecting is tried with `BatchMode=yes` first. If ssh needs a password or a new
-host key confirmed, the UI steps aside (`ui_suspend`), ssh asks in the plain terminal, and the
-shared SSH connection is reused afterwards, so nothing else prompts.
-
-Because the preview is built with `say`, the TUI shows it inside the boxes that follow (the config
-checklist, then the "Review" yes/no box).
-When the preview is taller than the terminal, it's shown first in a scrollable text box, so the
-question box stays small. Keystrokes are read from `/dev/tty`, which keeps the boxes working even
-inside loops that read from a pipe. The TUI uses `whiptail` if present, else `dialog`
-(`GMS_TUI_BIN` overrides).
-
-Plugins may call the same functions (e.g. the `ssh` server type uses `ui_ask`), so they work in
-both interfaces without changes.
-
-## Screenshots
-
-The README's screenshots are generated, so they can be kept current: `docs/screenshots/make.sh`
-builds a demo setup with the tests' helpers (`tests/lib.sh`: a Gale profile, an AMP server that is
-a local folder behind a stand-in `ssh`, neutral names), runs `game-mod-sync --cli` and `--tui` in a
-fixed-size `tmux` terminal, presses keys, waits for each screen's text, and turns
-`tmux capture-pane -e -N` into an SVG of a terminal window (`ansi2svg.py`: Windows Terminal's
-Campbell colours, fixed-width text runs so columns line up in any font). Colours are pinned: a
-newt palette file (`NEWT_COLORS_FILE`) and `GMS_TREE_ACCENT` / `GMS_TREE_HDR_BG` for the drawn
-lists, and so is the picture's size (`ansi2svg.py --cols/--rows/--fill`: tmux versions differ in how
-much of the blank edges and cleared backgrounds they capture). CI runs the script on every PR (it fails if a screen can't be reached) and is the
-reference: whiptail and tmux draw a few cells differently on other systems, so the committed SVGs
-are CI's. When the UI changes, the job lists the screenshots that differ and attaches its own as
-the run's `screenshots` artifact, which is what gets committed (a PR checklist item).
-
-## Files
-
-| Path | Purpose |
-|---|---|
-| `game-mod-sync` | Launcher: picks the interface, loads the core |
-| `lib/core.sh` | Everything else: options, plugin loading, menus' content, setup, preview, sync |
-| `lib/ui-text.sh` / `lib/ui-tui.sh` | The two interfaces (same functions) |
-| `lib/common.sh` | SSH connection reuse, config file and targets file |
-| `plugins/sources/gale.sh` | Finds Gale's data folder and lists its games and profiles ([gale.md](../plugins/sources/gale.md)) |
-| `plugins/backends/amp.sh` | Finds game folders inside AMP instances ([amp.md](../plugins/backends/amp.md)) |
-| `plugins/backends/ssh.sh` | Any SSH server: you type the game folder ([ssh.md](../plugins/backends/ssh.md)) |
-| `lib/worlds.sh` | World download: folders, consistent copy, local backup and install |
-| `plugins/worlds/valheim.sh` | Valheim's chunked world folders ([valheim.md](../plugins/worlds/valheim.md)) |
-| `plugins/worlds/files.sh` | Worlds saved as `<world>.<ext>` files ([files.md](../plugins/worlds/files.md)) |
-| `plugins/games/_default.conf` | Defaults for every game (BepInEx layout) |
-| `plugins/games/valheim.conf` | Valheim specifics |
-
-Per-computer state lives in `~/.config/game-mod-sync/` (or `$GMS_CONFIG_DIR`):
-
-| File | Contents |
-|---|---|
-| `config` | Gale folder, last server type, host and user, `EXTRA_EXCLUDES`, `KEEP_BACKUPS`, `AMP_INSTANCES_DIR`, `LOCAL_WORLDS` |
-| `targets.tsv` | One line per profile: `source  game  profile  backend  user@host  game root  kept  worlds` (tab-separated) |
-| `plugins/{sources,backends,games}/` | Optional: your own plugins and overrides (see the top of this page) |
-
-## Adding a game
-
-Most BepInEx games work without a game file: the BepInEx loader syncs `BepInEx/plugins`, keeps
-`MMHOOK/` and offers `BepInEx/config` files. Add `plugins/games/<id>.conf` (where `<id>` is Gale's folder name for the game) only to
-change something. Put it in the repo to share it, or in `~/.config/game-mod-sync/plugins/games/`
-to keep it local:
-
-```bash
-GAME_NAME="Lethal Company"
-SYNC_DIRS="BepInEx/plugins BepInEx/patchers"   # mirrored folders
-EXCLUDES="MMHOOK/"                              # never sent or deleted on the server
-GAME_MARKER="BepInEx/plugins"                   # how to recognise the game folder on a server
-SERVER_MATCH="lethal|1966720"                   # regex: matching server folders are listed first
-MANAGED_amp="some_setting=SomeMod.dll"          # files AMP installs itself when its setting is on
-AFTER_SYNC="Restart the server in AMP."
-```
-
-`CONFIG_DIRS`, `CONFIG_SKIP`, `THUNDERSTORE_COMMUNITY` (default: the game id) and
-`TAG_CLIENT`/`TAG_SERVER` can be set here too. A game using a loader that has no plugin yet can
-set the folders directly, e.g. MelonLoader: `SYNC_DIRS="Mods Plugins UserLibs"`,
-`CONFIG_DIRS="UserData"`.
-
-## Adding a mod loader
-
-Add `plugins/loaders/<name>.sh` with `<name>_label`, `<name>_detect PROFILE_DIR` (succeed if the
-profile uses it), `<name>_defaults` (set `SYNC_DIRS`, `EXCLUDES`, `CONFIG_DIRS`, `CONFIG_SKIP`) and,
-optionally, `<name>_config_owners PLUGINS_DIR` (print `id<TAB>mod folder`). Loaders are tried in
-alphabetical order; without a profile folder (e.g. `--games`) the first one is used. See
-[plugins/loaders/bepinex.md](../plugins/loaders/bepinex.md).
-
-## Adding a server type
-
-Create `plugins/backends/<name>.sh` with these functions (it's picked up automatically), and write
-`plugins/backends/<name>.md` describing its usage and design (see [amp.md](../plugins/backends/amp.md)
-as a model). Use `ui_ask` / `ui_choose` / `info` / `warn` / `die` for any interaction, so it works in
-both interfaces:
-
-```bash
-<name>_label()          # menu text, e.g. "Pterodactyl"
-<name>_default_user()   # default SSH user, or "" to ask with no default
-<name>_candidates TARGET MARKER
-    # Print one "label<TAB>absolute game root" line per game folder on the server that
-    # contains MARKER. Use rssh "$TARGET" "<command>" to run commands there.
-<name>_manual()         # optional: define it if candidates come from what the user typed,
-                        # so the single result isn't offered as a menu
-<name>_managed TARGET ROOT SPECS
-                        # optional: SPECS is the game's MANAGED_<name>. Print
-                        # "pattern<TAB>reason" for each file the server installs itself
-                        # (see "Server-managed files")
-```
-
-Ideas for later:
-
-- **LinuxGSM:** `~/serverfiles` for each game user.
-- **Pterodactyl:** `/var/lib/pterodactyl/volumes/<uuid>`, with names from the panel API.
-- **Docker:** bind-mount paths from `docker inspect`.
-
-Until one of these exists, the `ssh` type covers it: you type the folder.
-
-The menu label in `where_of()` shortens AMP paths to the instance name. Add a case there if a new
-backend has a nicer short name.
-
-## Adding a profile source
-
-Create `plugins/sources/<name>.sh` (it's picked up automatically) and write `plugins/sources/<name>.md`
-describing its usage and design (see [gale.md](../plugins/sources/gale.md) as a model):
-
-```bash
-<name>_label()   # e.g. "r2modman"
-<name>_init()    # find the data folder; return 1 if this manager isn't installed
-<name>_list()    # print "game id<TAB>profile<TAB>profile folder" lines
-```
-
-r2modman would be a close copy of `gale.sh`. Its profiles are in
-`r2modmanPlus-local/<Game>/profiles/<profile>/` with the same `BepInEx/` layout. Its game folder
-names differ from Gale's (`Valheim` vs `valheim`), so map them to the same game ids.
-
-## Adding a world format
-
-Add `plugins/worlds/<name>.sh` and `plugins/worlds/<name>.md`, then set `WORLD_FORMAT=<name>` (and
-the folders) in the game file. A game whose worlds are a few `<world>.<ext>` files needs no plugin:
-`WORLD_FORMAT=files` with `WORLD_FILES="ext ext"`.
-
-```bash
-<name>_label()          # e.g. "Valheim (chunked saves)"
-<name>_list_sh()        # print sh code that, run in a worlds folder, prints
-                        # "world<TAB>details" per complete world, in the order to offer them
-<name>_paths WORLD      # the names in the worlds folder that make up WORLD
-<name>_stamp_sh WORLD   # print sh code that, run in a worlds folder, prints what changes with
-                        # every save of WORLD (nothing if it has no complete save). It's
-                        # compared between the server and the copy, so it must not depend on
-                        # file times
-```
-
-## Alternatives considered
-
-- **Gale's CLI:** only `--game`, `--profile` and `--launch`. There's no headless install or export.
-- **r2modman-headless:** applies an exported `.r2z` to a server by downloading the mods from
-  Thunderstore. It's an early release (v0.0.x), and it needs an export and a file copy for every
-  change. Pushing the profile's own files guarantees the server runs exactly what you tested.
-- **AMP:** no Thunderstore integration for Valheim.
-
-## Testing
-
-The scripts were tested locally against a fake Gale folder (two games), a fake AMP tree
-(Valheim and Lethal Company instances) and an `ssh` shim that runs commands locally. The
-tests covered first-run setup, ranking, preview, apply, idempotent re-runs, backup pruning,
-the empty-profile guard, ambiguous `-p`, `--setup`, WSL detection, nested folder creation, and
-AMP-managed ValheimPlus detection (keep, decline, and option turned off), user plugin drop-ins and
-overrides. The TUI was driven with real `whiptail` and `dialog` in a terminal session: setup,
-managed-file prompt (yes and no), long preview, apply, cancel, and the missing-tool error. The
-terminal's alternate-screen flag was sampled during whole runs to confirm a single enter/leave, and
-the copy bar was checked to move from "checking files" through rising percentages. Error output from
-a failing rsync and the ssh password fallback were tested too.
-Configs were tested with real files from a 55-mod Valheim profile (Gale on Windows): owner
-matching against the real DLLs, plus an end-to-end run with a new server-side mod
-(ServersideQoL_AutoStore: mod and both its configs copied, one inside a sub-folder), a differing
-client+server config (ticked and replaced, old one in the backups), a client-only one (listed, not
-copied), comment- and CRLF-only differences (hidden), a removed mod's leftover (hidden), `-y` (new
-only), Back (nothing changed), and no network (tags unknown, files offered).
-Lint: `shellcheck game-mod-sync lib/*.sh plugins/*/*.sh` (settings in `.shellcheckrc`).
+- **Badges**: `docs/badges/make.py` draws the README's panel from `go test -json`; CI makes them
+  again and fails if the committed ones differ.
+- **Screenshots**: `docs/screenshots/make.sh` builds the program and a made-up demo
+  (`docs/screenshots/demo`: a Gale profile and an AMP-style test server shown as
+  `game.example.com` through `~/.ssh/config`, with fixed dates and tags), drives both interfaces in
+  `tmux` and turns the screens into SVGs (`ansi2svg.py`). Two runs give identical pictures; CI's
+  are the reference, uploaded as the run's `screenshots` artifact.

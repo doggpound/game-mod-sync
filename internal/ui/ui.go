@@ -1,6 +1,6 @@
 // Package ui is how game-mod-sync talks to the person using it. The app never
 // prints or reads directly; it calls a UI, so the same flow works in the text
-// interface (ui/text) and the full-screen one (phase 4).
+// interface (ui/text) and the full-screen one (ui/tui).
 package ui
 
 import "errors"

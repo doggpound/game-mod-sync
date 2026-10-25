@@ -33,7 +33,7 @@ if [ -n "${INPUT_TAG:-}" ]; then
 elif [ "${GITHUB_REF_TYPE:-}" = tag ]; then
   tag=$GITHUB_REF_NAME
 else
-  v=$(version_at HEAD); [ -n "$v" ] || { echo "no VERSION in lib/core.sh"; exit 1; }
+  v=$(version_at HEAD); [ -n "$v" ] || { echo "no version in VERSION"; exit 1; }
   tag=v$v
 fi
 [[ $tag =~ ^v[0-9]+(\.[0-9]+)*$ ]] || { echo "not a version tag: $tag"; exit 1; }
@@ -52,7 +52,7 @@ echo "Releasing $tag at ${sha:0:7}"
 
 # The tagged commit should carry that version (the first ones were tagged by hand)
 v=$(version_at "$sha")
-[ "$v" = "$ver" ] || echo "note: lib/core.sh at ${sha:0:7} says '${v:-none}'"
+[ "$v" = "$ver" ] || echo "note: the version at ${sha:0:7} is '${v:-none}'"
 
 # Previous version: the highest tag below this one
 prev=$(git tag -l 'v*' | grep -vx "$tag" | { cat; echo "$tag"; } | sort -V | grep -B1 -x "$tag" | grep -vx "$tag" || true)

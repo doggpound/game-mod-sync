@@ -118,8 +118,8 @@ func (a *App) locations() string {
 }
 
 func (a *App) defaultUI() string {
-	if a.State.Config.DefaultUI == "tui" {
-		return "tui"
+	if a.State.Config.DefaultUI == "cli" {
+		return "cli"
 	}
-	return "cli"
+	return "tui"
 }

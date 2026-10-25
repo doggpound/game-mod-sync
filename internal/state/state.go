@@ -127,7 +127,7 @@ func (s *State) Save() error {
 		return err
 	}
 	if err := writeTOML(filepath.Join(s.Dir, "config.toml"),
-		"# game-mod-sync settings (see docs/DESIGN-GO.md)\n", s.Config); err != nil {
+		"# game-mod-sync settings (see the README, Settings)\n", s.Config); err != nil {
 		return err
 	}
 	return writeTOML(filepath.Join(s.Dir, "targets.toml"),

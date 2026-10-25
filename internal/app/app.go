@@ -447,8 +447,8 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 	fs.BoolVar(&list, "list", false, "show where each profile syncs to and exit")
 	fs.BoolVar(&gamesFlag, "games", false, "show detected games and what gets synced for each")
 	fs.BoolVar(&config, "config", false, "print where settings are stored and exit")
-	fs.BoolVar(&cli, "cli", false, "text menus and prompts (default)")
-	fs.BoolVar(&tui, "tui", false, "full-screen interface (needs a terminal)")
+	fs.BoolVar(&cli, "cli", false, "text menus and prompts")
+	fs.BoolVar(&tui, "tui", false, "full-screen interface (the default; needs a terminal)")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
@@ -463,7 +463,8 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 		return err
 	}
 	var u ui.UI = text.New(in, out)
-	useTUI := tui || (st.Config.DefaultUI == "tui" && !cli)
+	// Full screen unless the settings say cli (0.x's default was text).
+	useTUI := tui || (!cli && st.Config.DefaultUI != "cli")
 	full := useTUI && !list && !gamesFlag && !config && fulltui.Usable(in, out)
 	if full {
 		t := fulltui.Start(in, out, version)

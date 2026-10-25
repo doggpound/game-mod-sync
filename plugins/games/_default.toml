@@ -9,7 +9,7 @@
 # Where mods and configs live comes from the mod loader (BepInEx: plugins,
 # config). Set any of these to override it:
 #   sync_dirs    mod folders, mirrored (only folders the mod manager fully owns)
-#   excludes     paths inside sync_dirs never sent or deleted (rsync patterns)
+#   excludes     paths inside sync_dirs never sent or deleted (rsync-style patterns)
 #   config_dirs  config folders: offered per file, never deleted
 #   config_skip  config paths never offered
 

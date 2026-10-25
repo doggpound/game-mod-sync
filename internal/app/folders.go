@@ -1,6 +1,7 @@
-// Package app is game-mod-sync's flow. In phase 1 that's syncing a set of
-// folders from this computer to a game folder on the server; profiles,
-// servers, configs and worlds come in later phases (docs/DESIGN-GO.md).
+// Package app is game-mod-sync's flow: the main menu, first-time setup, a
+// profile's sync (mods, then config files, one review), world download and
+// the Edit menu. It reaches plugins only through internal/plugin, and the
+// person only through internal/ui. See docs/DESIGN.md.
 package app
 
 import (

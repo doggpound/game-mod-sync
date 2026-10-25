@@ -3,7 +3,7 @@
 <h1 align="center">game-mod-sync</h1>
 
 <p align="center">
-  <a href="tests"><img src="docs/badges/panel.svg" alt="Status: version, tests, end-to-end sync, interface choice. Plugins: sources, loaders, server types, games."></a>
+  <img src="docs/badges/panel.svg" alt="Status: version and tests. Core and plugin test results.">
 </p>
 
 > [!WARNING]
@@ -12,243 +12,152 @@
 > server. Read the code before you point it at yours. It keeps backups of everything it replaces
 > or removes on the server, but use it at your own risk.
 
-Push the mods from a Gale profile to a game server over SSH.
+Send the mods and configs of a [Gale](https://github.com/Kesomannen/gale) profile to your game
+server, and copy the server's world back to try mod updates on. One program for Windows, macOS and
+Linux, with nothing else to install. It works with the SFTP details a game host gives out, with
+SSH logins, and finds the game folders of [CubeCoders AMP](https://cubecoders.com/AMP) instances.
 
-One command with two interfaces; the options and behaviour are the same in both:
-
-- `game-mod-sync` (or `--cli`): text menus and prompts. Also works in scripts (`-g … -p … -y`).
-- `game-mod-sync --tui`: dialog boxes on one full screen, with a progress bar whenever it waits on
-  the server or copies (needs `whiptail` or `dialog`; on Debian/Ubuntu:
-  `sudo apt install whiptail`).
-
-To start in full screen without typing `--tui`, set **Edit → Default interface** to `tui` (saved
-as `DEFAULT_UI=tui` in the config file). Without a terminal (scripts, cron) it always uses text.
-
-## Screenshots
-
-<p align="center"><img src="docs/screenshots/tui-configs.svg" width="760" alt="Full-screen interface: the config files list, with one differing file opened to show the setting that differs (server value, then yours)"></p>
+<p align="center"><img src="docs/screenshots/tui-configs.svg" width="760" alt="Full-screen interface: the config files of a profile compared with the server's, one opened to show the settings that differ (the server's value, then yours)"></p>
 
 <details>
 <summary>More screenshots</summary>
 
 **Main menu** (`--tui`)
 
-<img src="docs/screenshots/tui-menu.svg" width="760" alt="Full-screen main menu with one profile, Edit and Help keys, and Ok / Exit buttons">
-
-**What will change on the server**
-
-<img src="docs/screenshots/tui-preview.svg" width="760" alt="The per-mod preview: one new, one updated and one removed mod">
+<img src="docs/screenshots/tui-menu.svg" width="760" alt="The main menu: a profile and the server it syncs to, with the keys under the list">
 
 **Review before anything is applied**
 
-<img src="docs/screenshots/tui-review.svg" width="760" alt="The review screen listing the mod changes and the picked config files, with Yes / No">
+<img src="docs/screenshots/tui-review.svg" width="760" alt="The review: new, updated and removed mods, the config file to copy, and a Yes / No question">
 
-**Text interface** (`--cli`, the default)
+**Download a world**
 
-<img src="docs/screenshots/cli-configs.svg" width="760" alt="Text interface: the menu, the per-mod preview and the config files checklist">
+<img src="docs/screenshots/tui-worlds.svg" width="760" alt="The worlds on the server, the one the server runs first">
+
+**Text interface** (`--cli`)
+
+<img src="docs/screenshots/cli-configs.svg" width="760" alt="Text interface: the compare and the config files checklist">
 
 <img src="docs/screenshots/cli-review.svg" width="760" alt="Text interface: the review and the apply question">
 
 </details>
 
-The pictures come from `docs/screenshots/make.sh`, which runs `game-mod-sync` against a made-up
-demo setup in a terminal and saves each screen. It's re-run whenever either interface changes.
-
 ## Install
 
-Needs `bash`, `rsync` and `ssh` locally (on Windows, use WSL) and `rsync` on the server.
+Download the file for your computer from
+[Releases](https://github.com/doggpound/game-mod-sync/releases/latest), extract it, and run
+`game-mod-sync`. Nothing else is needed.
 
-```bash
-git clone https://github.com/doggpound/game-mod-sync.git
-mkdir -p ~/.local/bin
-ln -s "$PWD/game-mod-sync/game-mod-sync" ~/.local/bin/game-mod-sync
-ssh-copy-id amp@game.example.com
-```
+| Computer | File | Run |
+|---|---|---|
+| Windows | `game-mod-sync-X.Y.Z-windows-amd64.zip` (`-arm64` for ARM PCs) | double-click `game-mod-sync.exe`, or run it in Windows Terminal |
+| macOS | `game-mod-sync-X.Y.Z-macos-arm64.tar.gz` (Apple silicon) or `-macos-amd64` (Intel) | `./game-mod-sync` in Terminal |
+| Linux | `game-mod-sync-X.Y.Z-linux-amd64.tar.gz` (or `-linux-arm64`) | `./game-mod-sync` |
 
-Or download a version from [Releases](https://github.com/doggpound/game-mod-sync/releases)
-(`game-mod-sync-X.Y.Z.tar.gz`), extract it and link `game-mod-sync` the same way.
+- **Windows** may say "Windows protected your PC" the first time, because the program isn't
+  code-signed: click **More info → Run anyway**.
+- **macOS** may refuse to open it for the same reason: right-click it → **Open**, or run
+  `xattr -d com.apple.quarantine game-mod-sync` once.
+- `SHA256SUMS` on the release has every file's checksum.
 
-Releases are made by `.forgejo/workflows/release.yml`: a push to `main` that raises `VERSION` in
-`lib/core.sh` tags that commit `vX.Y.Z` and publishes the release (notes from the commit messages,
-the `.tar.gz` and its `.sha256`). To rebuild an old one, run the workflow by hand with its tag.
+With Go installed you can also build it: `go install github.com/doggpound/game-mod-sync@latest`.
+
+## First run: connect to your server
+
+Start `game-mod-sync` (full screen; `--cli` for plain text). It lists your Gale profiles; pick
+one and answer the setup questions once:
+
+1. **Server type:** *CubeCoders AMP* if the server runs AMP, otherwise *Other: SSH or SFTP details
+   from your host*.
+2. **Server address, port, user name**, and the **password** when it's asked. These are exactly
+   what a game host's "SFTP details" say. You can also paste an `sftp://user@host:port/folder`
+   link as the address; it fills in the rest.
+3. **The game folder:** it searches the server for the game's mod folder (e.g. `BepInEx/plugins`)
+   and lists what it finds, the ones that look like this game first. Pick one, or *Type the
+   folder*.
+
+After a login with a typed password it offers to save the password in your system's password
+store (Windows Credential Manager, macOS Keychain); it's never written to a settings file. A host
+that lets you install an SSH key, an SSH agent (1Password, Windows' OpenSSH agent) or keys in
+`~/.ssh` work too, and `~/.ssh/config` is used like the `ssh` command uses it.
 
 ## Use
 
-```bash
-game-mod-sync        # or: game-mod-sync --tui
-```
+Pick a profile in the main menu (Enter) to sync it:
 
-1. Pick a profile from the menu. It lists every Gale game and profile.
-2. **First time only for that profile:** pick the server type (AMP, or "Other" to type a folder),
-   the host and the SSH user. Then pick the matching game folder on the server.
-3. Pick which config files to copy, press OK, then check the **Review** screen (mods and the
-   config files you picked) and answer Yes to apply.
-4. Press OK on the result (also when it was already in sync) and you're back at the menu. Pick another profile or **Exit** (Tab to the button; `x` in the text version).
-5. Restart the server.
+1. It compares the profile's mods with the server's **by content** and shows what's new, updated
+   and removed, per mod.
+2. **Config files** that are new or differ are listed with the settings that differ. New ones are
+   ticked; differing ones aren't (copying replaces the server's settings with yours). Files of
+   mods that only run on players' machines (client-side, from Thunderstore's tags) are never
+   copied.
+3. **Review**, then Yes to apply. Replaced and deleted files are kept on the server in
+   `<game folder>/.mod-sync-backups/<time>/` (the last 5).
+4. Restart the server so it loads the new mods.
 
-After the first time, the only question is which profile to sync. With `-p PROFILE` it syncs that
-profile once and exits, without the menu.
+Keys in the full screen: arrows and Enter, **E** to edit a profile, **D** to download a world,
+**?** for help, Esc to go back. In checklists Space ticks and → opens a file's differences. In the
+text interface the same keys are typed after a number (`1e`, `1d`), `d` shows the differences.
 
-```
-==> Valheim / MyProfile  ->  Valheim01 on game.example.com
-   + new      Azumatt-AzuClock
-   ~ updated  ValheimModding-Jotunn
-   - removed  Old-RemovedMod
-   ...config files checklist...
+### Download a world
 
-Valheim / MyProfile  ->  Valheim01 on game.example.com
-Mods: 5 file(s) to send, 2 to delete
-   + new      Azumatt-AzuClock
-   ~ updated  ValheimModding-Jotunn
-   - removed  Old-RemovedMod
-Config files to copy: 1
-   new      server  ServersideQoL_AutoStore  ArgusMagnus.ServersideQoL.AutoStore.cfg
-Replaced and deleted files are kept in .mod-sync-backups on the server.
-Apply these changes to the server? (5 file(s) to send, 2 to delete, 1 config file(s) to copy) [y/N]
-```
+**D** on a profile copies a world from its server into this computer's saves for the game, to
+try mod updates on a copy before syncing them. The world the server runs is listed first, the
+game's own backups last. Your copy of that world is moved to `game-mod-sync-backups` next to the
+worlds folder first. The server keeps running: if it saves during the copy, the copy is made
+again. Nothing on the server is changed. Close the game first. In Valheim your character is
+saved on your computer, so play the copy with a spare character.
 
-## Configs
+### Edit
 
-Config files (`BepInEx/config`) are compared too, file by file, and offered in a checklist before
-anything is applied:
-
-- **New** (missing on the server, e.g. a mod you just added): ticked.
-- **Differs**: unticked, with the settings that differ (`Lock Configuration: Off -> On` = server,
-  then yours). Files that only differ in comments or spacing aren't shown.
-- **Client mod only** (Thunderstore tag *Client-side* without *Server-side*): listed, never copied.
-- Files from mods that aren't in the profile anymore are hidden (`-v` shows them).
-
-```
-       STATUS   SIDE    MOD                      FILE
-   [*] new      server  ServersideQoL_AutoStore  ArgusMagnus.ServersideQoL.AutoStore.cfg
- ▾ [ ] differs  both    AzuAutoStore             Azumatt.AzuAutoStore.cfg
-             Lock Configuration
-                 server: Off
-                 yours:  On
-```
-
-In the full-screen interface (`--tui`), rows that differ have an arrow: **Right** opens the settings that differ
-(server value, then yours) under the row, **Left** closes them, **+** / **-** open / close all,
-**Space** ticks. In the text version, type `d` to see all differences. `-n -v` prints them in a
-dry run.
-
-Every menu has **H - Help Menu** at the bottom (`h` in the text version): what the screen is
-for, and its keys.
-
-The mods' client/server tags are looked up once and cached. To look them up again (after a mod
-changes its tags), use **Edit → Refresh mod tags** or `--refresh-tags`.
-
-Configs are never deleted on the server, and a replaced one goes to the backups. With `-y`, only
-new configs are copied.
-
-## Download a world
-
-To try mod updates on a copy of the server's world before syncing them, highlight a profile in the
-main menu and press **D** (`1d` for profile 1 in the text version), or run
-`game-mod-sync -p MyProfile --download-world`:
-
-1. Pick a world. The one the server runs is first; the game's own backups are listed after it.
-2. Check what happens and answer Yes. Your copy of that world (if you have one) is moved to
-   `game-mod-sync-backups` next to the game's worlds folder first (last 5 kept).
-3. Update the profile's mods in Gale, start the game with the profile and play the copy. Then sync.
-
-```
-World Midgard (save 1940, 2026-10-22 18:55, 65M)
-  from  Valheim01 on game.example.com: .../Valheim/896660/Saves/worlds_local
-  to    /mnt/c/Users/me/AppData/LocalLow/IronGate/Valheim/worlds_local
-  Your copy (save 2) is moved to .../IronGate/Valheim/game-mod-sync-backups first.
-Nothing on the server is changed. Close Valheim on this computer first.
-```
-
-- It only reads from the server, and only replaces the one world on this computer.
-- The server keeps playing: if it saves during the copy, the copy is taken again (up to 3 times).
-- The server's worlds folder and this computer's are found by themselves (AMP: from the instance's
-  settings). If not, you're asked once and it's remembered.
-- Valheim keeps your character (inventory, skills) on your computer, so what it gains or loses in
-  the copy comes along to the server. Test with a spare character.
-- A game needs a world format to have this (see [World formats](#world-formats)); `--games` shows it.
-
-## Edit
-
-Highlight a profile in the main menu and press **E** (`1e` for profile 1 in the text version) to change what you've set up for it. **Back** (`b` in the text version) returns to
-the previous menu from any step, including halfway through a server setup, without saving anything.
-
-| Choice | What it does |
-|---|---|
-| Change a profile's server | Runs the first-time setup again for that profile (same as `--setup`) |
-| Server-managed files | Tick a file to leave the server's copy alone, untick it to sync over it |
-| Forget a profile's server | Removes the setup; the next sync asks again |
-| Edit the config file | Opens it in `$EDITOR` (nano or vi if unset) and reloads it |
-| Show file locations | Same as `--config` |
-| Refresh mod tags | Looks up every mod's client/server tags on Thunderstore again (same as `--refresh-tags`) |
-| Default interface | `cli` (text) or `tui` (full screen) when started without `--cli` / `--tui` |
+**E** on a profile: change or forget its server, forget its saved password, show where the
+settings are, look the mods' client/server tags up again, and choose the interface it starts in.
 
 ## Options
 
-Every option works in both interfaces.
-
 | Command | What it does |
 |---|---|
-| `game-mod-sync --tui` | Full-screen interface for this run |
-| `game-mod-sync --cli` | Text interface for this run |
-| `game-mod-sync -n` | Preview only, change nothing |
-| `game-mod-sync -g valheim -p MyProfile` | Skip the menu |
-| `game-mod-sync -g valheim -p MyProfile -y` | No questions |
-| `game-mod-sync -v` | List every file |
-| `game-mod-sync --setup` | Point a profile at a different server folder |
-| `game-mod-sync --refresh-tags` | Look up the mods' client/server tags again |
-| `game-mod-sync -p MyProfile --download-world` | Copy a world from the profile's server into this computer's saves |
-| `game-mod-sync -p MyProfile --world Ashlands -y` | That world, no questions (`-y` alone takes the one the server runs) |
-| `game-mod-sync --list` | Show where each profile syncs to |
-| `game-mod-sync --games` | Show detected games and what gets synced |
-| `game-mod-sync --config` | Show where settings are stored |
+| `game-mod-sync --tui` / `--cli` | Full screen / text for this run (the default, full screen, can be changed in Edit) |
+| `game-mod-sync -p MyProfile` | Sync that profile, without the menu (`-g valheim` if the name is in several games) |
+| `game-mod-sync -p MyProfile -y` | No questions: new configs are copied, differing ones aren't |
+| `game-mod-sync -n` | Dry run: show what would change, change nothing |
+| `game-mod-sync -v` | List every file, and every config difference in full |
+| `game-mod-sync --setup` | Set up a profile's server again |
+| `game-mod-sync -p MyProfile --download-world` | Download the world the server runs (`--world NAME` for another) |
+| `game-mod-sync --refresh-tags` | Look the mods' client/server tags up on Thunderstore again |
+| `game-mod-sync --list` | Where each profile syncs to |
+| `game-mod-sync --games` | The games found, and what's synced for each |
+| `game-mod-sync --config` | Where the settings are |
+| `game-mod-sync sync --host H --user U --local DIR --root DIR` | Sync any folders, without profiles (see `sync -h`) |
 
-## Server types
+## Settings
 
-- [AMP](plugins/backends/amp.md)
-- [Other (SSH)](plugins/backends/ssh.md)
+In `%APPDATA%\game-mod-sync` on Windows, `~/.config/game-mod-sync` elsewhere: `config.toml`
+(e.g. `keep_backups`, `default_ui`, `update_check = false`) and `targets.toml` (where each
+profile syncs to). Your own game files go in its `plugins/games/` folder.
 
-## Profile sources 
+Coming from 0.x (the shell-script version)? Its settings in `~/.config/game-mod-sync` are read and
+converted the first time; nothing needs setting up again.
 
-- [Gale](plugins/sources/gale.md)
+## Supported
 
-## Mod loaders
-- [BepInEx](plugins/loaders/bepinex.md)
+| | |
+|---|---|
+| Mod managers | [Gale](https://github.com/Kesomannen/gale) |
+| Mod loaders | BepInEx |
+| Server types | CubeCoders AMP; any SSH or SFTP server ("Other") |
+| Games | Valheim (with world download); any BepInEx game works without a game file |
 
-## World formats
+Adding a game is a small settings file, no code; mod managers, mod loaders, server types and world
+formats are plugins. See [plugins/README.md](plugins/README.md).
 
-- [Valheim](plugins/worlds/valheim.md)
-- [Files (`<world>.<ext>`)](plugins/worlds/files.md)
+## Development
 
-## Good to know
-
-- Only changed files are sent: files are compared by content, not by date.
-- Replaced or removed files are kept on the server in `<game folder>/.mod-sync-backups/` (last 5).
-- Server-only files are never touched. For Valheim, that's `MMHOOK/` and `Valheim.DisplayBepInExInfo.dll`.
-- If the server installs a mod itself (for example, AMP's "Install ValheimPlus" option), you're asked once
-  whether to leave it alone. Enter means yes. Change it later with **Edit → Server-managed files**.
-- Settings are saved per computer in `~/.config/game-mod-sync/`.
-- Your own plugins or overrides go in `~/.config/game-mod-sync/plugins/{sources,backends,games}/`.
-  A file with the same name as one in the repo replaces it.
-
-## Tests
-
-Every plugin has its own test file: `tests/plugins/<kind>/<name>.sh` (sources, loaders, server
-types, games), plus an end-to-end sync in `tests/core/sync.sh`. They run against a fake server
-(a local folder reached through a stand-in `ssh`, with real `rsync`), so nothing needs a network.
-
-```bash
-tests/run.sh            # everything
-tests/run.sh amp gale   # only these files
-```
-
-`.forgejo/workflows/tests.yml` runs them (and `shellcheck`) on every pull request.
-`main` is protected: changes come in through pull requests, and these checks must pass before
-one is merged. The badge panel at the top of this page (`docs/badges/panel.svg`, made from the
-single badges next to it) is generated; after changing
-tests, plugins or `VERSION`, run `tests/run.sh --badges docs/badges` and commit them (CI checks
-they match). A new plugin gets a test file next to the
-others, with a `# badge: KIND: NAME` line and functions named `t_...`; it appears in its group's badge
-above by itself.
-
-For how it works and how to add games or server types, see [docs/DESIGN.md](docs/DESIGN.md).
+- How it works: [docs/DESIGN.md](docs/DESIGN.md). Adding plugins: [plugins/README.md](plugins/README.md).
+- Build: `go build .` Test: `go test ./...` (the tests start their own SSH/SFTP server; no network needed).
+- `main` is protected: changes come in through pull requests, and the checks
+  (`.forgejo/workflows/tests.yml`) must pass. After changing tests or `VERSION`, regenerate the
+  badges (`go test -json ./... > results.json && python3 docs/badges/make.py results.json docs/badges`);
+  after changing anything visible, the screenshots (`docs/screenshots/make.sh`).
+- Releases: raising the version in `VERSION` and merging publishes it, with the program for every
+  platform, on Forgejo and the GitHub mirror (`.forgejo/release.sh`).

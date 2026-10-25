@@ -31,8 +31,12 @@ import (
 var version = "dev"
 
 func main() {
-	if err := run(os.Args[1:], os.Stdin, os.Stdout); err != nil {
+	err := run(os.Args[1:], os.Stdin, os.Stdout)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
+	}
+	pauseIfOwnWindow()
+	if err != nil {
 		os.Exit(1)
 	}
 }

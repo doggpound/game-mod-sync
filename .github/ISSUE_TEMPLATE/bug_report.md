@@ -19,11 +19,11 @@ labels: []
 ## Environment
 
 - `game-mod-sync --version`:
-- Interface: `--cli` / `--tui` (whiptail or dialog?)
-- OS (and WSL if Windows):
+- Interface: `--cli` / `--tui`
+- OS (Windows / macOS / Linux, or WSL):
 - Mod manager / profile source (e.g. Gale):
 - Mod loader (e.g. BepInEx):
-- Server type (AMP / other SSH):
+- Server type (AMP / Other: SSH or SFTP; SFTP only?):
 - Game:
 
 ## Output
