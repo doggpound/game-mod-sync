@@ -12,10 +12,17 @@
 > server. Read the code before you point it at yours. It keeps backups of everything it replaces
 > or removes on the server, but use it at your own risk.
 
-Send the mods and configs of a [Gale](https://github.com/Kesomannen/gale) profile to your game
-server, and copy the server's world back to try mod updates on. One program for Windows, macOS and
-Linux, with nothing else to install. It works with the SFTP details a game host gives out, with
-SSH logins, and finds the game folders of [CubeCoders AMP](https://cubecoders.com/AMP) instances.
+Keep a modded game server in step with the mod profile you play with. game-mod-sync sends a
+profile's mods and config files from your mod manager to the server, shows exactly what will
+change first, and keeps a backup of everything it replaces. For games that support it, it also
+copies the server's world back to your computer, so you can try mod updates on a copy before you
+sync them.
+
+- One program for Windows, macOS and Linux, with nothing else to install.
+- Any server you can reach with the SFTP or SSH details your game host gives you; server panels it
+  knows (see [Supported](#supported)) are searched for their game folders by themselves.
+- Mod managers, mod loaders, server types, world formats and games are plugins, so more can be
+  added ([plugins/README.md](plugins/README.md)).
 
 <p align="center"><img src="docs/screenshots/tui-configs.svg" width="760" alt="Full-screen interface: the config files of a profile compared with the server's, one opened to show the settings that differ (the server's value, then yours)"></p>
 
@@ -64,17 +71,17 @@ With Go installed you can also build it: `go install github.com/doggpound/game-m
 
 ## First run: connect to your server
 
-Start `game-mod-sync` (full screen; `--cli` for plain text). It lists your Gale profiles; pick
-one and answer the setup questions once:
+Start `game-mod-sync` (full screen; `--cli` for plain text). It lists the profiles of the mod
+managers it finds on your computer; pick one and answer the setup questions once:
 
-1. **Server type:** *CubeCoders AMP* if the server runs AMP, otherwise *Other: SSH or SFTP details
+1. **Server type:** your server's panel if it's in the list, otherwise *Other: SSH or SFTP details
    from your host*.
 2. **Server address, port, user name**, and the **password** when it's asked. These are exactly
    what a game host's "SFTP details" say. You can also paste an `sftp://user@host:port/folder`
    link as the address; it fills in the rest.
-3. **The game folder:** it searches the server for the game's mod folder (e.g. `BepInEx/plugins`)
-   and lists what it finds, the ones that look like this game first. Pick one, or *Type the
-   folder*.
+3. **The game folder:** it searches the server for the game's mod folder (for BepInEx games,
+   `BepInEx/plugins`) and lists what it finds, the ones that look like this game first. Pick one,
+   or *Type the folder*.
 
 After a login with a typed password it offers to save the password in your system's password
 store (Windows Credential Manager, macOS Keychain); it's never written to a settings file. A host
@@ -89,8 +96,8 @@ Pick a profile in the main menu (Enter) to sync it:
    and removed, per mod.
 2. **Config files** that are new or differ are listed with the settings that differ. New ones are
    ticked; differing ones aren't (copying replaces the server's settings with yours). Files of
-   mods that only run on players' machines (client-side, from Thunderstore's tags) are never
-   copied.
+   mods that only run on players' machines are never copied (where the mods' client/server tags
+   are known, e.g. from Thunderstore).
 3. **Review**, then Yes to apply. Replaced and deleted files are kept on the server in
    `<game folder>/.mod-sync-backups/<time>/` (the last 5).
 4. Restart the server so it loads the new mods.
@@ -101,12 +108,13 @@ text interface the same keys are typed after a number (`1e`, `1d`), `d` shows th
 
 ### Download a world
 
-**D** on a profile copies a world from its server into this computer's saves for the game, to
-try mod updates on a copy before syncing them. The world the server runs is listed first, the
-game's own backups last. Your copy of that world is moved to `game-mod-sync-backups` next to the
-worlds folder first. The server keeps running: if it saves during the copy, the copy is made
-again. Nothing on the server is changed. Close the game first. In Valheim your character is
-saved on your computer, so play the copy with a spare character.
+For games with world download (see [Supported](#supported)), **D** on a profile copies a world
+from its server into this computer's saves for the game, to try mod updates on a copy before
+syncing them. The world the server runs is listed first when the server type knows it. Your copy
+of that world is moved to `game-mod-sync-backups` next to the worlds folder first. The server can
+keep running: if it saves during the copy, the copy is made again. Nothing on the server is
+changed. Close the game first. If the game keeps your character on your computer, what it gains
+or loses in the copy comes back with you to the server, so use a spare character.
 
 ### Edit
 
@@ -118,13 +126,13 @@ settings are, look the mods' client/server tags up again, and choose the interfa
 | Command | What it does |
 |---|---|
 | `game-mod-sync --tui` / `--cli` | Full screen / text for this run (the default, full screen, can be changed in Edit) |
-| `game-mod-sync -p MyProfile` | Sync that profile, without the menu (`-g valheim` if the name is in several games) |
+| `game-mod-sync -p MyProfile` | Sync that profile, without the menu (add `-g GAME` if the name is in several games) |
 | `game-mod-sync -p MyProfile -y` | No questions: new configs are copied, differing ones aren't |
 | `game-mod-sync -n` | Dry run: show what would change, change nothing |
 | `game-mod-sync -v` | List every file, and every config difference in full |
 | `game-mod-sync --setup` | Set up a profile's server again |
 | `game-mod-sync -p MyProfile --download-world` | Download the world the server runs (`--world NAME` for another) |
-| `game-mod-sync --refresh-tags` | Look the mods' client/server tags up on Thunderstore again |
+| `game-mod-sync --refresh-tags` | Look the mods' client/server tags up again (Thunderstore) |
 | `game-mod-sync --list` | Where each profile syncs to |
 | `game-mod-sync --games` | The games found, and what's synced for each |
 | `game-mod-sync --config` | Where the settings are |
@@ -141,12 +149,15 @@ converted the first time; nothing needs setting up again.
 
 ## Supported
 
+What's built in today:
+
 | | |
 |---|---|
 | Mod managers | [Gale](https://github.com/Kesomannen/gale) |
 | Mod loaders | BepInEx |
-| Server types | CubeCoders AMP; any SSH or SFTP server ("Other") |
-| Games | Valheim (with world download); any BepInEx game works without a game file |
+| Server types | any SSH or SFTP server ("Other"); [CubeCoders AMP](https://cubecoders.com/AMP) (finds its instances' game folders, mods it installs itself, saves) |
+| Games | any BepInEx game works without a game file; Valheim has one (with world download) |
+| World formats | Valheim's world folders; `<world>.<ext>` files (for games that save that way) |
 
 Adding a game is a small settings file, no code; mod managers, mod loaders, server types and world
 formats are plugins. See [plugins/README.md](plugins/README.md).
