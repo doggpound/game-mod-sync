@@ -90,3 +90,7 @@ More can be added as plugins: [plugins/README.md](plugins/README.md).
 
 `go build .` and `go test ./...` (no network needed). How it works: [docs/DESIGN.md](docs/DESIGN.md).
 Changes go through pull requests; raising `VERSION` and merging publishes a release.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

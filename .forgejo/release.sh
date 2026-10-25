@@ -127,6 +127,7 @@ if git cat-file -e "$sha:go.mod" 2>/dev/null; then
     (cd "$src" && CGO_ENABLED=0 GOOS=$os GOARCH=$arch GOTOOLCHAIN=local \
       go build -trimpath -ldflags "-s -w -X main.version=$ver" -o "$dir/$exe" .)
     cp "$src/README.md" "$dir/"
+    [ -f "$src/LICENSE" ] && cp "$src/LICENSE" "$dir/"
     if [ "$os" = windows ]; then
       (cd "$out" && python3 -m zipfile -c "$name-$label-$arch.zip" "$name-$label-$arch/")
       files+=("$name-$label-$arch.zip")
