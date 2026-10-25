@@ -1,8 +1,8 @@
 name: release
 
 # A release for every version:
-# - a push to main with a new VERSION in lib/core.sh tags that commit vX.Y.Z
-#   and releases it (nothing to do by hand); other pushes to main do nothing
+# - a push to main with a new version in VERSION tags that commit vX.Y.Z and
+#   releases it (nothing to do by hand); other pushes to main do nothing
 # - pushing a tag vX.Y.Z releases that tag
 # - run by hand (Actions > release > Run workflow) with a tag to (re)build an
 #   existing version's release, e.g. an old one
@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v2.7.2); empty = the version in lib/core.sh"
+        description: "Tag to release (e.g. v1.0.0); empty = the version in VERSION"
         required: false
         default: ""
 
@@ -25,6 +25,29 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Tools
+        run: |
+          if ! command -v python3 >/dev/null; then
+            if command -v sudo >/dev/null && [ "$(id -u)" != 0 ]; then S=sudo; else S=""; fi
+            $S apt-get update -qq && $S apt-get install -y -qq python3 >/dev/null
+          fi
+
+      # The same Go cache as the tests (only restored here: main's is kept up
+      # to date by go-cache.yml).
+      - name: Go cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cache/gms-go
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ hashFiles('.forgejo/go-setup.sh') }}-${{ hashFiles('go.sum') }}
+          restore-keys: go-${{ hashFiles('.forgejo/go-setup.sh') }}-
+
+      - name: Go toolchain
+        run: bash .forgejo/go-setup.sh
+
       - name: Build and publish the release
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -33,4 +56,5 @@ jobs:
           # Contents read/write on that repo)
           GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
           GH_REPO: doggpound/game-mod-sync
+          GOPROXY: ${{ vars.GOPROXY }}
         run: bash .forgejo/release.sh
