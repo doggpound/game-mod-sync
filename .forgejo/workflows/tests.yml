@@ -1,10 +1,11 @@
 name: tests
 
-# Runs tests/run.sh: one test file per plugin (tests/plugins/<kind>/<name>.sh)
-# plus an end-to-end sync, and checks that the README's badges (docs/badges/)
-# match the results. main is protected: changes come in through pull requests,
-# and this check must pass before one can be merged. So it runs on pull
-# requests only, not again on the merge (run it by hand for main if needed).
+# Checks a pull request: Go formatting, vet and tests (with a real SSH/SFTP
+# server inside the tests), a build for every platform it's released for, that
+# the README's badges (docs/badges/) match the test results, and that the
+# screenshots can still be made. main is protected: changes come in through
+# pull requests, and this check must pass before one can be merged. So it runs
+# on pull requests only, not again on the merge (run it by hand if needed).
 on:
   pull_request:
   workflow_dispatch:
@@ -18,44 +19,14 @@ jobs:
       - name: Tools
         run: |
           need=""
-          for t in rsync perl shellcheck tmux whiptail python3; do command -v "$t" >/dev/null || need="$need $t"; done
+          for t in shellcheck tmux python3; do command -v "$t" >/dev/null || need="$need $t"; done
           if [ -n "$need" ]; then
             if command -v sudo >/dev/null && [ "$(id -u)" != 0 ]; then S=sudo; else S=""; fi
             $S apt-get update -qq && $S apt-get install -y -qq $need >/dev/null
           fi
-          bash --version | sed -n 1p; rsync --version | sed -n 1p; perl -v | sed -n 2p
 
-      - name: Lint
-        run: shellcheck -x -S warning game-mod-sync lib/*.sh plugins/*/*.sh .forgejo/release.sh .forgejo/go-setup.sh tests/*.sh tests/plugins/*/*.sh tests/core/*.sh docs/screenshots/make.sh
-
-      - name: Test every plugin
-        run: |
-          if bash tests/run.sh --badges "$RUNNER_TEMP/badges"; then :; else touch "$RUNNER_TEMP/failed"; fi
-
-      - name: Badges up to date
-        run: |
-          # The README's badges are files in docs/badges/, so they show on Forgejo
-          # and on the GitHub mirror. They must match what the tests produce.
-          if ! diff -r docs/badges "$RUNNER_TEMP/badges" >/dev/null 2>&1; then
-            echo "docs/badges/ is out of date - run: tests/run.sh --badges docs/badges, and commit it"
-            diff -r docs/badges "$RUNNER_TEMP/badges" | head -n 20 || true
-            touch "$RUNNER_TEMP/failed"
-          fi
-
-      - name: Screenshots
-        run: |
-          # docs/screenshots/make.sh must still get through every screen. The
-          # committed pictures are the ones this job makes (whiptail and tmux
-          # draw slightly differently elsewhere), so a difference here means the
-          # UI changed: take the "screenshots" artifact of this run and commit it.
-          if bash docs/screenshots/make.sh; then
-            if ! git diff --quiet -- docs/screenshots; then
-              echo "note: these screenshots differ from the committed ones - commit the 'screenshots' artifact of this run if the change is intended:"
-              git diff --name-only -- docs/screenshots | sed 's/^/  /'
-            fi
-          else
-            touch "$RUNNER_TEMP/failed"
-          fi
+      - name: Lint the scripts
+        run: shellcheck -x -S warning .forgejo/release.sh .forgejo/go-setup.sh docs/screenshots/make.sh
 
       # Go toolchain, downloaded libraries and build cache, kept between runs:
       # downloaded again only when the Go version (.forgejo/go-setup.sh) or
@@ -73,27 +44,33 @@ jobs:
       - name: Go toolchain
         run: bash .forgejo/go-setup.sh
 
-      - name: Go version
+      - name: Go
         env:
           # A Go module proxy (e.g. a local caching registry) can be set as the
           # repository variable GOPROXY (Settings > Actions > Variables), so its
           # address isn't in this public file. Unset = Go's default.
           GOPROXY: ${{ vars.GOPROXY }}
         run: |
-          # The Go rewrite (docs/DESIGN-GO.md): formatting, vet, tests (with a
-          # real SSH/SFTP server inside the tests), and a build for every
-          # platform it's released for.
           export GOTOOLCHAIN=local CGO_ENABLED=0
           go version
           ok=1 t=$SECONDS
           took() { echo "($1: $((SECONDS - t))s)"; t=$SECONDS; }
-          unformatted=$(gofmt -l cmd internal)
+          unformatted=$(gofmt -l .)
           if [ -n "$unformatted" ]; then echo "not gofmt-formatted:"; echo "$unformatted"; ok=0; fi
           go vet ./... || ok=0
           took "format + vet"
-          go test -count=1 ./... || ok=0
+          # -json for the badges; the readable results are printed from it.
+          go test -count=1 -json ./... >"$RUNNER_TEMP/results.json" || ok=0
+          python3 -c '
+          import json, sys
+          for l in open(sys.argv[1]):
+              try: e = json.loads(l)
+              except ValueError: continue
+              if e.get("Action") == "output" and (not e.get("Test") or e["Output"].lstrip().startswith(("--- FAIL", "FAIL")) or "_test.go" in e["Output"]):
+                  sys.stdout.write(e["Output"])
+          ' "$RUNNER_TEMP/results.json"
           took "tests"
-          go build -trimpath -o /dev/null ./cmd/game-mod-sync || { echo "build failed: linux/amd64"; ok=0; }
+          go build -trimpath -o /dev/null . || { echo "build failed: linux/amd64"; ok=0; }
           took "build"
           # The other platforms are type-checked (including their own files,
           # e.g. the Windows SSH agent), not linked: that's the slow part. The
@@ -103,6 +80,36 @@ jobs:
           done
           took "other platforms"
           [ "$ok" = 1 ] || touch "$RUNNER_TEMP/failed"
+
+      - name: Badges up to date
+        run: |
+          # The README's badges are files in docs/badges/, so they show on Forgejo
+          # and on the GitHub mirror. They must match what the tests produce.
+          mkdir -p "$RUNNER_TEMP/badges"
+          python3 docs/badges/make.py "$RUNNER_TEMP/results.json" "$RUNNER_TEMP/badges"
+          if ! diff -r -x make.py docs/badges "$RUNNER_TEMP/badges" >/dev/null 2>&1; then
+            echo "docs/badges/ is out of date - run: go test -json ./... > results.json && python3 docs/badges/make.py results.json docs/badges, and commit it"
+            diff -r -x make.py docs/badges "$RUNNER_TEMP/badges" | head -n 20 || true
+            touch "$RUNNER_TEMP/failed"
+          fi
+
+      - name: Screenshots
+        env:
+          GOPROXY: ${{ vars.GOPROXY }}
+        run: |
+          # docs/screenshots/make.sh must still get through every screen. The
+          # committed pictures are the ones this job makes (tmux draws slightly
+          # differently elsewhere), so a difference here means the UI changed:
+          # take the "screenshots" artifact of this run and commit it.
+          export GOTOOLCHAIN=local CGO_ENABLED=0
+          if bash docs/screenshots/make.sh; then
+            if ! git diff --quiet -- docs/screenshots; then
+              echo "note: these screenshots differ from the committed ones - commit the 'screenshots' artifact of this run if the change is intended:"
+              git diff --name-only -- docs/screenshots | sed 's/^/  /'
+            fi
+          else
+            touch "$RUNNER_TEMP/failed"
+          fi
 
       - name: Screenshots artifact
         uses: actions/upload-artifact@v3
