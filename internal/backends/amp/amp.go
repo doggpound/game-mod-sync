@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"fmt"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/sftp"
@@ -99,4 +100,74 @@ func appSettings(c *sftp.Client, inst string) (string, error) {
 		r.Close()
 	}
 	return "", nil
+}
+
+// Saves reads where the game saves and which world it runs from the
+// instance's settings. spec is the game's worlds.saves.amp: "ARG SETTING",
+// the command-line option that names the save folder (in
+// App.CommandLineArgs, e.g. -savedir "Saves", relative to the game folder)
+// and the AppSettings entry that names the world (e.g. WorldName). Values
+// still holding {{templates}} are left out; either may be "".
+func Saves(c *sftp.Client, root, instancesDir, spec string) (saveDir, world string) {
+	inst, _, ok := Instance(root, instancesDir)
+	arg, setting, _ := strings.Cut(spec, " ")
+	if !ok || arg == "" {
+		return "", ""
+	}
+	files, err := c.Glob(path.Join(inst, "*.kvp"))
+	if err != nil {
+		return "", ""
+	}
+	var args, settings string
+	for _, f := range files {
+		r, err := c.Open(f)
+		if err != nil {
+			continue
+		}
+		sc := bufio.NewScanner(r)
+		sc.Buffer(make([]byte, 64*1024), 4*1024*1024)
+		for sc.Scan() {
+			l := sc.Text()
+			if v, ok := strings.CutPrefix(l, "App.CommandLineArgs="); ok && args == "" {
+				args = v
+			}
+			if v, ok := strings.CutPrefix(l, "App.AppSettings="); ok && settings == "" {
+				settings = v
+			}
+		}
+		r.Close()
+	}
+	saveDir = optionValue(args, arg)
+	if setting != "" {
+		if m := regexp.MustCompile(`"` + regexp.QuoteMeta(setting) + `":"([^"]*)"`).FindStringSubmatch(settings); m != nil {
+			world = m[1]
+		}
+	}
+	if strings.Contains(saveDir, "{{") {
+		saveDir = ""
+	}
+	if strings.Contains(world, "{{") {
+		world = ""
+	}
+	return saveDir, world
+}
+
+// optionValue is the value after option in a command line: a word, or
+// "several words" in quotes.
+func optionValue(cmdline, option string) string {
+	words := strings.Fields(cmdline)
+	for i := 0; i < len(words)-1; i++ {
+		if words[i] != option {
+			continue
+		}
+		v := words[i+1]
+		if !strings.HasPrefix(v, `"`) {
+			return v
+		}
+		for j := i + 2; !(len(v) > 1 && strings.HasSuffix(v, `"`)) && j < len(words); j++ {
+			v += " " + words[j]
+		}
+		return strings.Trim(v, `"`)
+	}
+	return ""
 }

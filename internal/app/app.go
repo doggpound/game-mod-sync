@@ -24,12 +24,14 @@ import (
 
 // Options are the command line's choices.
 type Options struct {
-	Game    string // -g: only this game
-	Profile string // -p: this profile, no menu
-	DryRun  bool   // -n
-	Yes     bool   // -y
-	Verbose bool   // -v
-	Setup   bool   // --setup
+	Game     string // -g: only this game
+	Profile  string // -p: this profile, no menu
+	DryRun   bool   // -n
+	Yes      bool   // -y
+	Verbose  bool   // -v
+	Setup    bool   // --setup
+	Download bool   // --download-world: download a world instead of syncing
+	World    string // --world NAME: the world to download
 }
 
 // App is one run of game-mod-sync.
@@ -151,12 +153,21 @@ func (a *App) Main() error {
 		case 0:
 			return fmt.Errorf("no profile named '%s'", a.Opts.Profile)
 		case 1:
+			if a.Opts.Download {
+				return a.Download(pick[0])
+			}
 			return a.Sync(pick[0])
 		}
 		return fmt.Errorf("'%s' exists for several games - add -g GAME", a.Opts.Profile)
 	}
 	if len(entries) == 1 && a.Opts.Yes {
+		if a.Opts.Download {
+			return a.Download(entries[0])
+		}
 		return a.Sync(entries[0])
+	}
+	if a.Opts.Download {
+		return errors.New("--download-world needs a profile: add -p PROFILE (or press D on it in the menu)")
 	}
 	for {
 		rows := make([]string, len(entries))
@@ -192,7 +203,11 @@ Afterwards you come back here.`,
 			}
 			continue
 		case "Download":
-			a.UI.Say("World download isn't in the Go version yet - use the bash version for now.")
+			if err := a.Download(entries[i]); errors.Is(err, ui.ErrExit) {
+				return nil
+			} else if err != nil {
+				a.UI.Warn(err.Error())
+			}
 			continue
 		}
 		if err := a.Sync(entries[i]); errors.Is(err, ui.ErrExit) {
@@ -394,6 +409,11 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 	fs.BoolVar(&o.Yes, "yes", false, "same as -y")
 	fs.BoolVar(&o.Verbose, "v", false, "list every file, not just a per-mod summary")
 	fs.BoolVar(&o.Setup, "setup", false, "(re)pick the server folder for the chosen profile")
+	fs.BoolVar(&o.Download, "download-world", false, "copy a world from the profile's server into this computer's saves (with -p)")
+	fs.Func("world", "the world to download (`NAME`; default: the one the server runs)", func(v string) error {
+		o.World, o.Download = v, true
+		return nil
+	})
 	fs.BoolVar(&refresh, "refresh-tags", false, "look up every mod's client/server tags on Thunderstore again")
 	fs.BoolVar(&list, "list", false, "show where each profile syncs to and exit")
 	fs.BoolVar(&gamesFlag, "games", false, "show detected games and what gets synced for each")

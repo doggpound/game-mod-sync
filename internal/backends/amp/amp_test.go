@@ -14,3 +14,19 @@ func TestInstance(t *testing.T) {
 		t.Errorf("ShortName = %q", got)
 	}
 }
+
+func TestOptionValue(t *testing.T) {
+	line := `-name "{{ServerName}}" -port 2456 -world "{{WorldName}}" -savedir "Saves" {{crossplay}}`
+	if got := optionValue(line, "-savedir"); got != "Saves" {
+		t.Errorf("got %q", got)
+	}
+	if got := optionValue(`-savedir "My Saves" -port 1`, "-savedir"); got != "My Saves" {
+		t.Errorf("spaces: got %q", got)
+	}
+	if got := optionValue(`-savedir Plain`, "-savedir"); got != "Plain" {
+		t.Errorf("plain: got %q", got)
+	}
+	if got := optionValue(`-port 1`, "-savedir"); got != "" {
+		t.Errorf("missing: got %q", got)
+	}
+}

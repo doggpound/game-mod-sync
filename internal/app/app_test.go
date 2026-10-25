@@ -73,6 +73,11 @@ func parse(t *testing.T, args []string) Options {
 			o.Yes = true
 		case "-n":
 			o.DryRun = true
+		case "--download-world":
+			o.Download = true
+		case "--world":
+			i++
+			o.World, o.Download = args[i], true
 		default:
 			t.Fatalf("test helper: unknown %s", args[i])
 		}
