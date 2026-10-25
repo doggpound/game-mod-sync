@@ -22,6 +22,7 @@ func (a *App) Edit(e Entry) error {
 				"Forget the saved password for this profile's server",
 				"Show file locations",
 				"Refresh mod tags (client / server, from Thunderstore)",
+				"Default interface (now: " + a.defaultUI() + ")",
 			},
 			Help: `Edit
 
@@ -31,7 +32,9 @@ Forget the saved password      remove it from the system's password store;
                                the next connection asks for it
 Show file locations            where settings and your own game files are
 Refresh mod tags               look up every mod's client/server tags on
-                               Thunderstore again (they're cached otherwise)`,
+                               Thunderstore again (they're cached otherwise)
+Default interface              text (cli) or full screen (tui) when started
+                               without --cli / --tui`,
 		})
 		if err != nil {
 			return err
@@ -88,6 +91,23 @@ Refresh mod tags               look up every mod's client/server tags on
 			if err := a.RefreshTags(entries); err != nil {
 				a.UI.Warn(err.Error())
 			}
+		case 5:
+			j, _, err := a.UI.Choose(ui.Menu{Title: "Default interface",
+				Question: "Start game-mod-sync in which interface? (now: " + a.defaultUI() + ")",
+				Rows:     []string{"cli - text menus and prompts", "tui - full screen"},
+				Help: "Default interface\n\ngame-mod-sync starts in this interface when run without --cli or --tui.\n" +
+					"Without a terminal (scripts) it always uses the text one."})
+			if errors.Is(err, ui.ErrExit) {
+				return err
+			}
+			if err != nil {
+				continue
+			}
+			a.State.Config.DefaultUI = []string{"cli", "tui"}[j]
+			if err := a.State.Save(); err != nil {
+				return err
+			}
+			a.UI.OK("Default interface: " + a.State.Config.DefaultUI + " (from the next start). --cli / --tui still choose for one run.")
 		}
 	}
 }
@@ -95,4 +115,11 @@ Refresh mod tags               look up every mod's client/server tags on
 func (a *App) locations() string {
 	return fmt.Sprintf("config:   %s\ntargets:  %s\ngames:    %s",
 		filepath.Join(a.State.Dir, "config.toml"), filepath.Join(a.State.Dir, "targets.toml"), a.userGames())
+}
+
+func (a *App) defaultUI() string {
+	if a.State.Config.DefaultUI == "tui" {
+		return "tui"
+	}
+	return "cli"
 }

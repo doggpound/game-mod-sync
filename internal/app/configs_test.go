@@ -139,6 +139,9 @@ func TestConfigsBackChangesNothing(t *testing.T) {
 	if exists(filepath.Join(sc, "Azumatt.AzuClock.cfg")) || !strings.Contains(out, "Cancelled - nothing changed.") {
 		t.Errorf("output:\n%s", out)
 	}
+	if strings.Contains(out, "Restart the server") {
+		t.Errorf("the after-sync note was shown although nothing changed:\n%s", out)
+	}
 }
 
 func TestConfigsNonePicked(t *testing.T) {

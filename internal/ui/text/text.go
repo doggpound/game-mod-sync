@@ -71,9 +71,10 @@ func (t *Text) Choose(m ui.Menu) (int, string, error) {
 	if m.Title != "" {
 		fmt.Fprintf(t.out, "\n%s\n", t.Bold("-- "+m.Title+" --"))
 	}
+	rows := columns(m.Rows)
 	list := func() {
-		for i, r := range m.Rows {
-			fmt.Fprintf(t.out, "  %s %s\n", t.Bold(fmt.Sprintf("%2d)", i+1)), r)
+		for i, r := range rows {
+			fmt.Fprintf(t.out, "  %s %s%s\n", t.Bold(fmt.Sprintf("%2d)", i+1)), r[0], t.Dim(r[1]))
 		}
 	}
 	list()
@@ -273,4 +274,26 @@ func (t *Text) Check(c ui.Checklist) ([]bool, error) {
 		}
 		list()
 	}
+}
+
+// columns lines up rows whose parts are separated by tabs; the parts after
+// the first (details, e.g. where a profile syncs to) are returned apart, so
+// they can be dimmed.
+func columns(rows []string) [][2]string {
+	w := 0
+	for _, r := range rows {
+		if first, _, ok := strings.Cut(r, "\t"); ok {
+			w = max(w, len([]rune(first)))
+		}
+	}
+	out := make([][2]string, len(rows))
+	for i, r := range rows {
+		first, rest, ok := strings.Cut(r, "\t")
+		if !ok {
+			out[i] = [2]string{r, ""}
+			continue
+		}
+		out[i] = [2]string{first + strings.Repeat(" ", w-len([]rune(first))), "  " + strings.ReplaceAll(rest, "\t", "  ")}
+	}
+	return out
 }

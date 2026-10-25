@@ -103,7 +103,7 @@ func TestMainMenu(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
-	for _, want := range []string{"1) Valheim / MyProfile  -> Valheim01 on 127.0.0.1", "-- Edit: Valheim / MyProfile --", "Synced."} {
+	for _, want := range []string{"1) Valheim / MyProfile  → Valheim01 on 127.0.0.1", "-- Edit: Valheim / MyProfile --", "Synced."} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
@@ -168,7 +168,7 @@ func TestServerInstalledFileIsAskedOnceAndLeftAlone(t *testing.T) {
 func TestListShowsTargets(t *testing.T) {
 	newAppSetup(t) // sets GMS_CONFIG_DIR
 	var out bytes.Buffer
-	if err := Run([]string{"--list"}, text.New(strings.NewReader(""), &out), &out, "test"); err != nil {
+	if err := Run([]string{"--list"}, strings.NewReader(""), &out, "test"); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "Valheim / MyProfile -> Valheim01 on 127.0.0.1") {

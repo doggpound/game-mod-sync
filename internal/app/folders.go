@@ -35,6 +35,7 @@ type FolderSync struct {
 	Now         func() time.Time // for tests; nil = time.Now
 	Extra       Extra            // more to offer and copy in the same sync (configs); may be nil
 	Title       string           // heading of the review, e.g. "Valheim / MyProfile  ->  Valheim01 on host"
+	Applied     bool             // set when changes were made on the server
 }
 
 // Extra is more to compare, offer and copy in the same sync: the config
@@ -244,6 +245,7 @@ func (f *FolderSync) Run() error {
 			f.UI.Warn(fmt.Sprintf("tidying old backups: %v", err))
 		}
 	}
+	f.Applied = true
 	f.UI.OK("Synced.")
 	if picked > 0 {
 		f.UI.Say(fmt.Sprintf("Copied %d config file(s).", picked))

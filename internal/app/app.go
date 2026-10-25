@@ -18,6 +18,8 @@ import (
 	"github.com/doggpound/game-mod-sync/internal/state"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
 	"github.com/doggpound/game-mod-sync/internal/ui"
+	"github.com/doggpound/game-mod-sync/internal/ui/text"
+	fulltui "github.com/doggpound/game-mod-sync/internal/ui/tui"
 )
 
 // Options are the command line's choices.
@@ -54,13 +56,14 @@ type Entry struct {
 	Game    *games.Game
 }
 
-// Label is the profile's line in menus.
+// Label is the profile's line in menus: the profile, a tab, where it syncs
+// to (the interfaces line the parts up in columns).
 func (a *App) Label(e Entry) string {
 	t, ok := a.State.Target(e.Source, e.Profile.Game, e.Profile.Name)
 	if !ok {
-		return fmt.Sprintf("%s / %s  (not set up yet)", e.Game.Name, e.Profile.Name)
+		return fmt.Sprintf("%s / %s\tnot set up yet", e.Game.Name, e.Profile.Name)
 	}
-	return fmt.Sprintf("%s / %s  -> %s on %s", e.Game.Name, e.Profile.Name, a.where(t), t.Host)
+	return fmt.Sprintf("%s / %s\t→ %s on %s", e.Game.Name, e.Profile.Name, a.where(t), t.Host)
 }
 
 func (a *App) where(t state.Target) string {
@@ -245,7 +248,7 @@ func (a *App) Sync(e Entry) error {
 	if errors.Is(err, ErrNothingToSync) {
 		return fmt.Errorf("'%s' has %w", p.Name, err)
 	}
-	if err == nil && !a.Opts.DryRun && g.AfterSync != "" {
+	if err == nil && fs.Applied && g.AfterSync != "" {
 		a.UI.Say(g.AfterSync)
 	}
 	return err
@@ -374,7 +377,9 @@ func (p *passwords) offerToSave() {
 }
 
 // Run parses the command line (the same options as the bash version) and runs.
-func Run(args []string, u ui.UI, out io.Writer, version string) error {
+// The interface is the full screen with --tui (or default_ui = "tui" in the
+// settings, unless --cli), when in and out are a terminal; else text.
+func Run(args []string, in io.Reader, out io.Writer, version string) error {
 	fs := flag.NewFlagSet("game-mod-sync", flag.ContinueOnError)
 	fs.SetOutput(out)
 	var o Options
@@ -394,7 +399,7 @@ func Run(args []string, u ui.UI, out io.Writer, version string) error {
 	fs.BoolVar(&gamesFlag, "games", false, "show detected games and what gets synced for each")
 	fs.BoolVar(&config, "config", false, "print where settings are stored and exit")
 	fs.BoolVar(&cli, "cli", false, "text menus and prompts (default)")
-	fs.BoolVar(&tui, "tui", false, "full-screen interface (not in the Go version yet: uses text)")
+	fs.BoolVar(&tui, "tui", false, "full-screen interface (needs a terminal)")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return nil
@@ -407,6 +412,16 @@ func Run(args []string, u ui.UI, out io.Writer, version string) error {
 	st, err := state.Load(state.Dir())
 	if err != nil {
 		return err
+	}
+	var u ui.UI = text.New(in, out)
+	useTUI := tui || (st.Config.DefaultUI == "tui" && !cli)
+	full := useTUI && !list && !gamesFlag && !config && fulltui.Usable(in, out)
+	if full {
+		t := fulltui.Start(in, out, version)
+		defer t.Stop()
+		u = t
+	} else if tui {
+		u.Say("The full-screen interface needs a terminal - using the text one.")
 	}
 	a := &App{UI: u, State: st, Opts: o, Version: version}
 	if st.Migrated {
@@ -461,9 +476,6 @@ func Run(args []string, u ui.UI, out io.Writer, version string) error {
 				strings.Join(g.ConfigDirs, " "))
 		}
 		return nil
-	}
-	if tui {
-		u.Say("The full-screen interface isn't in the Go version yet - using the text one.")
 	}
 	return a.Main()
 }
