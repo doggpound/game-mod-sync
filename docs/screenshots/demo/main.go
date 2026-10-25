@@ -123,7 +123,7 @@ func main() {
 	world(filepath.Join(d, "local", "worlds_local"), "Midgard", 1902)
 
 	cfg := filepath.Join(d, "config")
-	write(filepath.Join(cfg, "config.toml"), fmt.Sprintf("gale_data_dir = %q\nkeep_backups = 5\nupdate_check = false\n\n[local_worlds]\n  valheim = %q\n",
+	write(filepath.Join(cfg, "config.toml"), fmt.Sprintf("keep_backups = 5\nupdate_check = false\n\n[source_dirs]\n  gale = %q\n\n[local_worlds]\n  valheim = %q\n",
 		filepath.Join(gale), filepath.Join(d, "local", "worlds_local")))
 	write(filepath.Join(cfg, "targets.toml"), fmt.Sprintf("[[target]]\n  source = \"gale\"\n  game = \"valheim\"\n  profile = \"MyProfile\"\n"+
 		"  backend = \"amp\"\n  host = \"game.example.com\"\n  port = 22\n  user = \"amp\"\n  root = %q\n", filepath.ToSlash(root)))

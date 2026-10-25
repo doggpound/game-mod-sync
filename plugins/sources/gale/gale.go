@@ -15,22 +15,22 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"github.com/doggpound/game-mod-sync/internal/plugin"
 )
 
-// Name and Label identify the source in settings and menus.
-const (
-	Name  = "gale"
-	Label = "Gale"
-)
+func init() { plugin.RegisterSource(Source{}) }
+
+// Source is Gale.
+type Source struct{}
+
+func (Source) Name() string                                  { return "gale" }
+func (Source) Label() string                                 { return "Gale" }
+func (Source) Find() []string                                { return Candidates() }
+func (Source) Profiles(dir string) ([]plugin.Profile, error) { return List(dir) }
+func (Source) ModTags(dir, game string) map[string]string    { return ModTags(dir, game) }
 
 const folder = "com.kesomannen.gale"
-
-// Profile is one Gale profile.
-type Profile struct {
-	Game string // game id
-	Name string
-	Dir  string
-}
 
 // Candidates are the Gale data folders that exist on this computer: native
 // Windows (%APPDATA%), Windows seen from WSL (every /mnt/*/Users/*, or
@@ -74,12 +74,12 @@ func Candidates() []string {
 
 // List returns every profile of every game in the data folder root, sorted
 // by game then profile. Folders without a profiles/ folder are ignored.
-func List(root string) ([]Profile, error) {
+func List(root string) ([]plugin.Profile, error) {
 	games, err := os.ReadDir(root)
 	if err != nil {
 		return nil, err
 	}
-	var out []Profile
+	var out []plugin.Profile
 	for _, g := range games {
 		if !g.IsDir() {
 			continue
@@ -91,7 +91,7 @@ func List(root string) ([]Profile, error) {
 		}
 		for _, p := range profiles {
 			if p.IsDir() {
-				out = append(out, Profile{Game: g.Name(), Name: p.Name(), Dir: filepath.Join(pdir, p.Name())})
+				out = append(out, plugin.Profile{Game: g.Name(), Name: p.Name(), Dir: filepath.Join(pdir, p.Name())})
 			}
 		}
 	}

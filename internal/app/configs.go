@@ -13,9 +13,8 @@ import (
 
 	"github.com/doggpound/game-mod-sync/internal/configs"
 	"github.com/doggpound/game-mod-sync/internal/games"
-	"github.com/doggpound/game-mod-sync/internal/loaders"
+	"github.com/doggpound/game-mod-sync/internal/plugin"
 	"github.com/doggpound/game-mod-sync/internal/remote"
-	"github.com/doggpound/game-mod-sync/internal/sources/gale"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
 	"github.com/doggpound/game-mod-sync/internal/ui"
 )
@@ -57,11 +56,29 @@ func (a *App) tags(game string) *configs.Tags {
 	if testTags != nil {
 		return testTags
 	}
-	root := a.galeDir
-	return &configs.Tags{
-		CachePath: configs.DefaultCachePath(),
-		Known:     func() map[string]string { return gale.ModTags(root, game) },
+	t := &configs.Tags{CachePath: configs.DefaultCachePath()}
+	// Mod managers that know their mods' tags offline are asked first.
+	var known []func() map[string]string
+	for _, e := range a.entries {
+		if s, ok := plugin.SourceNamed(e.Source); ok {
+			if mt, ok := s.(plugin.ModTagger); ok {
+				dir := e.DataDir
+				known = append(known, func() map[string]string { return mt.ModTags(dir, game) })
+			}
+		}
 	}
+	t.Known = func() map[string]string {
+		out := map[string]string{}
+		for _, k := range known {
+			for m, c := range k() {
+				if _, ok := out[m]; !ok {
+					out[m] = c
+				}
+			}
+		}
+		return out
+	}
+	return t
 }
 
 // configExtra offers a profile's config files in a sync (FolderSync.Extra).
@@ -88,11 +105,16 @@ func (a *App) configExtra(e Entry, c *remote.Client, root string) *configExtra {
 
 func (x *configExtra) Scan(m *transfer.Manifest) error {
 	g := x.e.Game
-	l := loaders.Detect(x.e.Profile.Dir)
+	var owners func(string) map[string]string
+	if l, ok := plugin.DetectLoader(x.e.Profile.Dir); ok {
+		if co, ok := l.(plugin.ConfigOwner); ok {
+			owners = co.ConfigOwners
+		}
+	}
 	s := &configs.Scanner{
 		Client: x.c, Local: x.e.Profile.Dir, Root: x.root,
 		ConfigDirs: g.ConfigDirs, Skip: transfer.Excludes(g.ConfigSkip), SyncDirs: g.SyncDirs,
-		Owners: l.ConfigOwners, Tags: x.a.tags(g.ID), Community: g.Thunderstore,
+		Owners: owners, Tags: x.a.tags(g.ID), Community: g.Thunderstore,
 		TagClient: g.TagClient, TagServer: g.TagServer, Verbose: x.a.Opts.Verbose,
 		Info: x.a.UI.Info, Warn: x.a.UI.Warn,
 	}

@@ -47,7 +47,7 @@ func newSetupCase(t *testing.T, opts ...testserver.Option) *appSetup {
 	write(t, filepath.Join(s.pdir, "BepInEx", "plugins", "Azumatt-AzuClock", "AzuClock.dll"), "clock")
 	t.Setenv("GMS_CONFIG_DIR", s.cfg)
 	st, _ := state.Load(s.cfg)
-	st.Config.GaleDataDir = gale
+	st.Config.SourceDirs = map[string]string{"gale": gale}
 	st.Save()
 	return s
 }

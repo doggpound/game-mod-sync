@@ -1,4 +1,4 @@
-package loaders
+package bepinex
 
 import (
 	"os"

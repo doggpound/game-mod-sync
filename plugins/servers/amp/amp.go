@@ -1,6 +1,10 @@
 // Package amp is the CubeCoders AMP server type. AMP keeps every instance
 // under the AMP user's home (~/.ampdata/instances/<Instance>/...), with the
-// game somewhere below it (Valheim: Valheim/896660/).
+// game somewhere below it (Valheim: Valheim/896660/). Game folders are found
+// below the instances folder (or, for an AMP panel login on AMP's own SFTP,
+// from where it starts); menus show the instance's name. It also reads the
+// instance's settings: which mods AMP installs itself, where the game saves
+// and which world it runs.
 package amp
 
 import (
@@ -11,13 +15,41 @@ import (
 	"strings"
 
 	"github.com/pkg/sftp"
+
+	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/state"
 )
 
-// Name and Label identify the server type in settings and menus.
-const (
-	Name  = "amp"
-	Label = "CubeCoders AMP"
-)
+func init() { plugin.RegisterServer(Server{}) }
+
+// Server is the AMP server type.
+type Server struct{}
+
+func (Server) Name() string  { return "amp" }
+func (Server) Label() string { return "CubeCoders AMP (finds the game folders of its instances)" }
+func (Server) Help() string {
+	return "logs in as the AMP user (or an AMP panel user on AMP's SFTP port) and lists the instances that have this game"
+}
+func (Server) DefaultUser() string { return "amp" }
+
+func (Server) SearchFrom(cfg *state.Config, home string, canRun bool) (string, int) {
+	if canRun {
+		return path.Join(home, cfg.AMPInstancesDir), 8
+	}
+	return home, 8 // an AMP panel login over SFTP starts in its instance
+}
+
+func (Server) ShortName(cfg *state.Config, root string) string {
+	return ShortName(root, cfg.AMPInstancesDir)
+}
+
+func (Server) Managed(cfg *state.Config, c *sftp.Client, root string, specs []string) ([]plugin.ManagedFile, error) {
+	return Managed(c, root, cfg.AMPInstancesDir, specs)
+}
+
+func (Server) Saves(cfg *state.Config, c *sftp.Client, root, spec string) (string, string) {
+	return Saves(c, root, cfg.AMPInstancesDir, spec)
+}
 
 // Instance returns the instance folder and name for a game folder inside
 // AMP's instances folder (instancesDir, e.g. .ampdata/instances), or false.
@@ -43,17 +75,11 @@ func ShortName(root, instancesDir string) string {
 	return root
 }
 
-// ManagedFile is a file the server installs itself.
-type ManagedFile struct {
-	Pattern string // relative to a sync folder, e.g. ValheimPlus.dll
-	Reason  string
-}
-
 // Managed reports which of the game's managed files AMP installs for this
 // instance: specs are "setting=pattern[,pattern]" (the game's managed.amp),
 // and a setting counts when the instance's App.AppSettings JSON has it true.
 // Settings files are read over SFTP, so this works on SFTP-only logins too.
-func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]ManagedFile, error) {
+func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]plugin.ManagedFile, error) {
 	inst, name, ok := Instance(root, instancesDir)
 	if !ok || len(specs) == 0 {
 		return nil, nil
@@ -62,7 +88,7 @@ func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]Manag
 	if err != nil || settings == "" {
 		return nil, err
 	}
-	var out []ManagedFile
+	var out []plugin.ManagedFile
 	for _, spec := range specs {
 		setting, pats, ok := strings.Cut(spec, "=")
 		if !ok {
@@ -72,7 +98,7 @@ func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]Manag
 			continue
 		}
 		for _, p := range strings.Split(pats, ",") {
-			out = append(out, ManagedFile{Pattern: p, Reason: fmt.Sprintf("AMP setting %q is on for %s", setting, name)})
+			out = append(out, plugin.ManagedFile{Pattern: p, Reason: fmt.Sprintf("AMP setting %q is on for %s", setting, name)})
 		}
 	}
 	return out, nil

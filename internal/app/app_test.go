@@ -38,7 +38,7 @@ func newAppSetup(t *testing.T) *appSetup {
 	write(t, filepath.Join(s.root, "BepInEx", "plugins", "Old", "Old.dll"), "old")
 	t.Setenv("GMS_CONFIG_DIR", s.cfg)
 	st, _ := state.Load(s.cfg)
-	st.Config.GaleDataDir = gale
+	st.Config.SourceDirs = map[string]string{"gale": gale}
 	st.Config.AMPInstancesDir = filepath.ToSlash(filepath.Join(srv.Root, ".ampdata", "instances"))
 	st.SetTarget(state.Target{Source: "gale", Game: "valheim", Profile: "MyProfile", Backend: "amp",
 		Host: srv.Host, Port: srv.Port, User: "amp", Root: s.root})

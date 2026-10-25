@@ -8,22 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/doggpound/game-mod-sync/internal/backends"
-	"github.com/doggpound/game-mod-sync/internal/backends/amp"
+	"github.com/doggpound/game-mod-sync/internal/plugin"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/state"
 	"github.com/doggpound/game-mod-sync/internal/ui"
 )
-
-// Server types offered at setup.
-const otherName = "ssh" // the name 0.x settings use for it
-
-var serverTypes = []struct{ name, label, help string }{
-	{amp.Name, "CubeCoders AMP (finds the game folders of its instances)",
-		"logs in as the AMP user (or an AMP panel user on AMP's SFTP port) and lists the instances that have this game"},
-	{otherName, "Other: SSH or SFTP details from your host",
-		"any server you can log in to with SSH or SFTP: the address, port, user name and password your host gave you"},
-}
 
 // Setup asks where a profile syncs to and saves it. It returns the open
 // connection too, so a sync right after doesn't log in again (the caller
@@ -34,24 +23,26 @@ func (a *App) Setup(e Entry) (state.Target, *remote.Client, error) {
 	a.UI.Say("")
 	a.UI.Say(fmt.Sprintf("One-time setup for %s / %s", g.Name, p.Name))
 
-	rows := make([]string, len(serverTypes))
-	def := 0
-	for i, st := range serverTypes {
-		rows[i] = st.label
-		if st.name == cfg.LastBackend {
-			def = i
+	// The server types, the last one used first.
+	types := plugin.Servers()
+	for i, st := range types {
+		if st.Name() == cfg.LastBackend && i > 0 {
+			types = append(append([]plugin.Server{st}, types[:i]...), types[i+1:]...)
+			break
 		}
 	}
-	rows[0], rows[def] = rows[def], rows[0] // the last one used first
-	order := []int{0, 1}
-	order[0], order[def] = order[def], order[0]
-	i, _, err := a.UI.Choose(ui.Menu{Title: "Setup: server type", Question: "What kind of server is it?", Rows: rows,
-		Help: "Setup: server type\n\n" + serverTypes[0].label + ":\n  " + serverTypes[0].help + "\n\n" +
-			serverTypes[1].label + ":\n  " + serverTypes[1].help})
+	rows := make([]string, len(types))
+	help := "Setup: server type"
+	for i, st := range types {
+		rows[i] = st.Label()
+		help += "\n\n" + st.Label() + ":\n  " + st.Help()
+	}
+	i, _, err := a.UI.Choose(ui.Menu{Title: "Setup: server type", Question: "What kind of server is it?", Rows: rows, Help: help})
 	if err != nil {
 		return state.Target{}, nil, err
 	}
-	backend := serverTypes[order[i]].name
+	server := types[i]
+	backend := server.Name()
 
 	t := state.Target{Source: e.Source, Game: p.Game, Profile: p.Name, Backend: backend}
 	host, err := a.UI.Ask("Server address (or paste an sftp:// link)", cfg.LastHost)
@@ -77,10 +68,7 @@ func (a *App) Setup(e Entry) (state.Target, *remote.Client, error) {
 		}
 	}
 	if t.User == "" {
-		defUser := ""
-		if backend == amp.Name {
-			defUser = "amp"
-		}
+		defUser := server.DefaultUser()
 		if backend == cfg.LastBackend && cfg.LastUser != "" {
 			defUser = cfg.LastUser
 		}
@@ -149,21 +137,16 @@ func parseServer(s string) (host string, port int, user, folder string) {
 // one, or type one.
 func (a *App) pickFolder(c *remote.Client, e Entry, t state.Target) (string, error) {
 	g := e.Game
-	home, err := backends.Home(c)
+	home, err := remote.Home(c)
 	if err != nil {
 		return "", err
 	}
 	start, depth := home, 6
-	if t.Backend == amp.Name {
-		depth = 8
-		// The AMP user's instances; an AMP panel login over SFTP starts in
-		// its instance instead, so search from wherever it starts.
-		if c.CanRun() {
-			start = path.Join(home, a.State.Config.AMPInstancesDir)
-		}
+	if srv, ok := plugin.ServerNamed(t.Backend); ok {
+		start, depth = srv.SearchFrom(&a.State.Config, home, c.CanRun())
 	}
 	a.UI.Info("Looking for " + g.GameMarker + " on the server ...")
-	roots, err := backends.FindRoots(c, start, g.GameMarker, depth)
+	roots, err := remote.FindRoots(c, start, g.GameMarker, depth)
 	if err != nil {
 		a.UI.Warn(fmt.Sprintf("couldn't search %s: %v", start, err))
 	}
@@ -183,8 +166,8 @@ func (a *App) pickFolder(c *remote.Client, e Entry, t state.Target) (string, err
 	rows := make([]string, 0, len(roots)+1)
 	for _, r := range roots {
 		label := r
-		if t.Backend == amp.Name {
-			label = amp.ShortName(r, a.State.Config.AMPInstancesDir) + "  " + r
+		if short := a.where(state.Target{Backend: t.Backend, Root: r}); short != r {
+			label = short + "  " + r
 		}
 		if !g.MatchesServer(r) {
 			label += "  (other game?)"
@@ -218,7 +201,7 @@ func (a *App) checkFolder(c *remote.Client, marker, typed string) (string, error
 	if strings.TrimSpace(typed) == "" {
 		return "", errors.New("a folder is required")
 	}
-	root, err := backends.Resolve(c, typed)
+	root, err := remote.ResolvePath(c, typed)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", typed, err)
 	}

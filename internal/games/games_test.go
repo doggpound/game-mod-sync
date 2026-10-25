@@ -1,24 +1,25 @@
-package games
+package games_test
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	. "github.com/doggpound/game-mod-sync/internal/games"
+	_ "github.com/doggpound/game-mod-sync/plugins/all"
 )
 
-// Every built-in game file must load, so a typo fails here and not for users.
-func TestEveryBuiltinGameLoads(t *testing.T) {
-	files, _ := fs.Glob(builtin, "builtin/*.toml")
-	if len(files) < 2 {
-		t.Fatalf("found %v", files)
+// Every game file must load, so a typo fails here and not for users.
+func TestEveryGameFileLoads(t *testing.T) {
+	ids := Builtin()
+	if len(ids) < 1 {
+		t.Fatalf("found %v", ids)
 	}
-	for _, f := range files {
-		id := strings.TrimSuffix(filepath.Base(f), ".toml")
+	for _, id := range append(ids, "_default") {
 		if _, err := Load(id, "", ""); err != nil {
-			t.Errorf("%s: %v", f, err)
+			t.Errorf("%s.toml: %v", id, err)
 		}
 	}
 }

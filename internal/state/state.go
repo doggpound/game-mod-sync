@@ -38,7 +38,8 @@ func Dir() string {
 
 // Config is the settings file.
 type Config struct {
-	GaleDataDir     string            `toml:"gale_data_dir,omitempty"` // empty = found automatically
+	SourceDirs      map[string]string `toml:"source_dirs,omitempty"`   // mod manager -> its data folder; empty = found automatically
+	GaleDataDir     string            `toml:"gale_data_dir,omitempty"` // in older settings: moved to SourceDirs["gale"]
 	LastBackend     string            `toml:"last_backend,omitempty"`  // offered first at setup
 	LastHost        string            `toml:"last_host,omitempty"`
 	LastUser        string            `toml:"last_user,omitempty"`
@@ -102,6 +103,7 @@ func Load(dir string) (*State, error) {
 			return nil, fmt.Errorf("%s: %w", cfgFile, err)
 		}
 	}
+	s.Config.moveGaleDir()
 	if terr == nil {
 		var tf targetsFile
 		if _, err := toml.DecodeFile(tgtFile, &tf); err != nil {
@@ -203,6 +205,7 @@ func (s *State) migrate() error {
 		f.Close()
 		c := &s.Config
 		c.GaleDataDir = vals["GALE_DATA_DIR"]
+		c.moveGaleDir()
 		c.LastBackend, c.LastHost, c.LastUser = vals["LAST_BACKEND"], vals["LAST_HOST"], vals["LAST_USER"]
 		if v := vals["AMP_INSTANCES_DIR"]; v != "" {
 			c.AMPInstancesDir = v
@@ -279,4 +282,18 @@ func shellUnquote(v string) string {
 		b.WriteByte(v[i])
 	}
 	return b.String()
+}
+
+// moveGaleDir moves gale_data_dir (older settings) into source_dirs.
+func (c *Config) moveGaleDir() {
+	if c.GaleDataDir == "" {
+		return
+	}
+	if c.SourceDirs == nil {
+		c.SourceDirs = map[string]string{}
+	}
+	if c.SourceDirs["gale"] == "" {
+		c.SourceDirs["gale"] = c.GaleDataDir
+	}
+	c.GaleDataDir = ""
 }

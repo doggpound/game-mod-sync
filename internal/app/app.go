@@ -9,12 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/doggpound/game-mod-sync/internal/backends/amp"
 	"github.com/doggpound/game-mod-sync/internal/configs"
 	"github.com/doggpound/game-mod-sync/internal/games"
+	"github.com/doggpound/game-mod-sync/internal/plugin"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/secrets"
-	"github.com/doggpound/game-mod-sync/internal/sources/gale"
 	"github.com/doggpound/game-mod-sync/internal/state"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
 	"github.com/doggpound/game-mod-sync/internal/ui"
@@ -50,14 +49,14 @@ type App struct {
 	// Updates checks for a newer release; nil = the public mirror's latest.
 	Updates *update.Checker
 
-	galeDir string  // Gale's data folder, once found
 	entries []Entry // the profiles listed in the menu
 }
 
 // Entry is one profile that can be synced.
 type Entry struct {
-	Source  string
-	Profile gale.Profile
+	Source  string         // the mod manager's name (plugin.Source)
+	DataDir string         // its data folder the profile is in
+	Profile plugin.Profile // the profile
 	Game    *games.Game
 }
 
@@ -71,60 +70,81 @@ func (a *App) Label(e Entry) string {
 	return fmt.Sprintf("%s / %s\t→ %s on %s", e.Game.Name, e.Profile.Name, a.where(t), t.Host)
 }
 
+// where is a target's game folder as menus show it (the server type's short name).
 func (a *App) where(t state.Target) string {
-	if t.Backend == amp.Name {
-		return amp.ShortName(t.Root, a.State.Config.AMPInstancesDir)
+	if s, ok := plugin.ServerNamed(t.Backend); ok {
+		return s.ShortName(&a.State.Config, t.Root)
 	}
 	return t.Root
 }
 
-// galeRoot finds Gale's data folder (asks once when there are several).
-func (a *App) galeRoot() (string, error) {
-	if d := a.State.Config.GaleDataDir; d != "" {
+// dataDir finds a mod manager's data folder: the one in the settings, else
+// the one found on this computer (asked once when there are several). ok is
+// false when this mod manager isn't installed.
+func (a *App) dataDir(s plugin.Source) (dir string, ok bool, err error) {
+	cfg := &a.State.Config
+	if d := cfg.SourceDirs[s.Name()]; d != "" {
 		if _, err := os.Stat(d); err != nil {
-			return "", fmt.Errorf("Gale's data folder in the settings doesn't exist: %s", d)
+			return "", false, fmt.Errorf("%s's data folder in the settings doesn't exist: %s", s.Label(), d)
 		}
-		return d, nil
+		return d, true, nil
 	}
-	c := gale.Candidates()
+	c := s.Find()
 	switch len(c) {
 	case 0:
-		return "", errors.New("couldn't find Gale's data folder. If it's somewhere unusual, set gale_data_dir in " +
-			filepath.Join(a.State.Dir, "config.toml"))
+		return "", false, nil
 	case 1:
-		return c[0], nil
+		return c[0], true, nil
 	}
-	i, _, err := a.UI.Choose(ui.Menu{Title: "Gale data folder", Question: "Found more than one Gale data folder. Which one is yours?", Rows: c})
+	i, _, err := a.UI.Choose(ui.Menu{Title: s.Label() + " data folder",
+		Question: "Found more than one " + s.Label() + " data folder. Which one is yours?", Rows: c})
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
-	a.State.Config.GaleDataDir = c[i]
-	return c[i], a.State.Save()
+	if cfg.SourceDirs == nil {
+		cfg.SourceDirs = map[string]string{}
+	}
+	cfg.SourceDirs[s.Name()] = c[i]
+	return c[i], true, a.State.Save()
 }
 
-// Entries lists the profiles that have something to sync.
+// Entries lists the profiles that have something to sync, from every mod
+// manager installed here.
 func (a *App) Entries() ([]Entry, error) {
-	root, err := a.galeRoot()
-	if err != nil {
-		return nil, err
-	}
-	a.galeDir = root
-	profiles, err := gale.List(root)
-	if err != nil {
-		return nil, err
-	}
 	var out []Entry
-	for _, p := range profiles {
-		if a.Opts.Game != "" && p.Game != a.Opts.Game {
-			continue
-		}
-		g, err := games.Load(p.Game, p.Dir, a.userGames())
+	found := false
+	var names []string
+	for _, s := range plugin.Sources() {
+		names = append(names, s.Label())
+		dir, ok, err := a.dataDir(s)
 		if err != nil {
 			return nil, err
 		}
-		if g.HasSyncDirs(p.Dir) {
-			out = append(out, Entry{Source: gale.Name, Profile: p, Game: g})
+		if !ok {
+			continue
 		}
+		found = true
+		profiles, err := s.Profiles(dir)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range profiles {
+			if a.Opts.Game != "" && p.Game != a.Opts.Game {
+				continue
+			}
+			g, err := games.Load(p.Game, p.Dir, a.userGames())
+			if err != nil {
+				return nil, err
+			}
+			if g.HasSyncDirs(p.Dir) {
+				out = append(out, Entry{Source: s.Name(), DataDir: dir, Profile: p, Game: g})
+			}
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("couldn't find a mod manager's data folder (%s). If it's somewhere unusual, "+
+			"set it in %s:\n  [source_dirs]\n  gale = '/path/to/com.kesomannen.gale'",
+			strings.Join(names, ", "), filepath.Join(a.State.Dir, "config.toml"))
 	}
 	return out, nil
 }
@@ -288,12 +308,14 @@ func (a *App) serverManaged(c *remote.Client, e Entry, t *state.Target) (transfe
 		}
 	}
 	specs := e.Game.Managed[t.Backend]
-	if t.Backend != amp.Name || len(specs) == 0 {
+	srv, _ := plugin.ServerNamed(t.Backend)
+	mf, ok := srv.(plugin.ManagedFiles)
+	if !ok || len(specs) == 0 {
 		return keep, nil
 	}
-	files, err := amp.Managed(c.SFTP(), t.Root, a.State.Config.AMPInstancesDir, specs)
+	files, err := mf.Managed(&a.State.Config, c.SFTP(), t.Root, specs)
 	if err != nil {
-		a.UI.Warn(fmt.Sprintf("couldn't read the AMP settings: %v", err))
+		a.UI.Warn(fmt.Sprintf("couldn't read the server's settings: %v", err))
 		return keep, nil
 	}
 	changed := false
@@ -498,7 +520,7 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 			seen[e.Profile.Game] = true
 			g := e.Game
 			fmt.Fprintf(out, "%s (%s, %s, %s)\n    sync: %s\n    keep on server: %s\n    configs: %s\n",
-				g.Name, g.ID, gale.Label, g.Loader, strings.Join(g.SyncDirs, " "),
+				g.Name, g.ID, sourceLabel(e.Source), g.Loader, strings.Join(g.SyncDirs, " "),
 				strings.Join(append(append([]string{}, g.Excludes...), st.Config.ExtraExcludes...), " "),
 				strings.Join(g.ConfigDirs, " "))
 		}
@@ -520,4 +542,11 @@ func (a *App) checkForUpdate() {
 	if r := c.Newer(a.Version); r != nil {
 		a.UI.OK(fmt.Sprintf("game-mod-sync %s is available (you have %s): %s", strings.TrimPrefix(r.Tag, "v"), a.Version, r.URL))
 	}
+}
+
+func sourceLabel(name string) string {
+	if s, ok := plugin.SourceNamed(name); ok {
+		return s.Label()
+	}
+	return name
 }

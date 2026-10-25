@@ -22,16 +22,17 @@ GROUPS = [
     ("Core", [
         ("group-core.svg", "core", [
             ("copy", "internal/transfer"), ("SSH", "internal/remote"), ("program", "internal/app"),
-            ("configs", "internal/configs"), ("settings", "internal/state"), ("updates", "internal/update"),
+            ("configs", "internal/configs"), ("settings", "internal/state"), ("plugins", "internal/plugin"),
+            ("updates", "internal/update"),
         ]),
         ("group-interface.svg", "interface", [("full screen", "internal/ui/tui")]),
     ]),
     ("Plugins", [
-        ("group-sources.svg", "source", [("Gale", "internal/sources/gale")]),
-        ("group-loaders.svg", "loader", [("BepInEx", "internal/loaders")]),
-        ("group-backends.svg", "server", [("AMP", "internal/backends/amp")]),
-        ("group-games.svg", "games", [("Valheim + defaults", "internal/games")]),
-        ("group-worlds.svg", "worlds", [("Valheim + files", "internal/worlds")]),
+        ("group-sources.svg", "source", [("Gale", "plugins/sources/gale")]),
+        ("group-loaders.svg", "loader", [("BepInEx", "plugins/loaders/bepinex")]),
+        ("group-backends.svg", "server", [("AMP", "plugins/servers/amp")]),
+        ("group-games.svg", "games", [("files", "internal/games")]),
+        ("group-worlds.svg", "worlds", [("Valheim", "plugins/worlds/valheim"), ("files", "plugins/worlds/files")]),
     ]),
 ]
 GREEN, RED, PURPLE = "#4c1", "#e05d44", "#8e2de2"

@@ -1,16 +1,15 @@
-// Package backends finds game folders on a server: every folder that contains
-// the game's marker folder (e.g. BepInEx/plugins). With a login that runs
-// commands it's one find; on SFTP-only logins the folders are walked over
-// SFTP, to a limited depth and number of folders.
-package backends
+package remote
+
+// Finding game folders on a server: every folder that contains the game's
+// marker folder (e.g. BepInEx/plugins). With a login that runs commands it's
+// one find; on SFTP-only logins the folders are walked over SFTP, to a
+// limited depth and number of folders.
 
 import (
 	"path"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/doggpound/game-mod-sync/internal/remote"
 )
 
 // MaxWalk is how many folders an SFTP search looks at before stopping.
@@ -22,10 +21,10 @@ var skipped = map[string]bool{".mod-sync-backups": true, ".git": true, "node_mod
 
 // FindRoots returns the game folders below start (absolute, sorted) that
 // contain marker, searching depth folders deep.
-func FindRoots(c *remote.Client, start, marker string, depth int) ([]string, error) {
+func FindRoots(c *Client, start, marker string, depth int) ([]string, error) {
 	if c.CanRun() {
-		cmd := "find " + remote.Quote(start) + " -mindepth 1 -maxdepth " + strconv.Itoa(depth+strings.Count(marker, "/")+1) +
-			" -type d -path " + remote.Quote("*/"+marker) + " -not -path '*/.mod-sync-backups/*' 2>/dev/null | sort"
+		cmd := "find " + Quote(start) + " -mindepth 1 -maxdepth " + strconv.Itoa(depth+strings.Count(marker, "/")+1) +
+			" -type d -path " + Quote("*/"+marker) + " -not -path '*/.mod-sync-backups/*' 2>/dev/null | sort"
 		out, err := c.Run(cmd)
 		if err == nil || len(out) > 0 { // find exits 1 on unreadable folders; its output still counts
 			var roots []string
@@ -40,7 +39,7 @@ func FindRoots(c *remote.Client, start, marker string, depth int) ([]string, err
 	return walk(c, start, marker, depth)
 }
 
-func walk(c *remote.Client, start, marker string, depth int) ([]string, error) {
+func walk(c *Client, start, marker string, depth int) ([]string, error) {
 	fc := c.SFTP()
 	type item struct {
 		dir   string
@@ -79,13 +78,13 @@ func walk(c *remote.Client, start, marker string, depth int) ([]string, error) {
 
 // Home is the folder a login starts in (the SSH user's home, or the SFTP
 // root a host gives).
-func Home(c *remote.Client) (string, error) {
+func Home(c *Client) (string, error) {
 	return c.SFTP().Getwd()
 }
 
-// Resolve turns a typed folder into an absolute one on the server: ~ and
+// ResolvePath turns a typed folder into an absolute one on the server: ~ and
 // relative paths are relative to the login's start folder.
-func Resolve(c *remote.Client, typed string) (string, error) {
+func ResolvePath(c *Client, typed string) (string, error) {
 	p := strings.TrimSpace(typed)
 	switch {
 	case p == "~" || p == "":

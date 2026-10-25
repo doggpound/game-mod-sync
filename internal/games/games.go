@@ -1,12 +1,11 @@
-// Package games holds each game's settings: what to sync, what to leave
-// alone, how to recognise it on a server. Built-in files (builtin/*.toml) are
-// read in order - _default.toml, then <game id>.toml - after the mod loader's
-// defaults, and a file with the same name in the user's games folder changes
-// them again (only the settings it lists).
+// Package games builds each game's settings: what to sync, what to leave
+// alone, how to recognise it on a server. The game files (plugins/games/*.toml,
+// registered with Register) are read in order - _default.toml, then
+// <game id>.toml - after the mod loader's defaults, and a file with the same
+// name in the user's games folder changes them again (only what it lists).
 package games
 
 import (
-	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -17,11 +16,27 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/doggpound/game-mod-sync/internal/loaders"
+	"github.com/doggpound/game-mod-sync/internal/plugin"
 )
 
-//go:embed builtin/*.toml
-var builtin embed.FS
+var builtin []fs.FS
+
+// Register adds game files (a folder of <game id>.toml files).
+func Register(files fs.FS) { builtin = append(builtin, files) }
+
+// Builtin lists the registered game ids (without _default).
+func Builtin() []string {
+	var ids []string
+	for _, f := range builtin {
+		names, _ := fs.Glob(f, "*.toml")
+		for _, n := range names {
+			if id := strings.TrimSuffix(n, ".toml"); id != "_default" {
+				ids = append(ids, id)
+			}
+		}
+	}
+	return ids
+}
 
 // Game is one game's settings.
 type Game struct {
@@ -59,13 +74,17 @@ type Worlds struct {
 // loader; userDir is the user's games folder (may be "").
 func Load(id, profileDir, userDir string) (*Game, error) {
 	g := &Game{ID: id}
-	l := loaders.Detect(profileDir)
-	g.Loader = l.Name
-	g.SyncDirs, g.Excludes, g.ConfigDirs, g.ConfigSkip = l.SyncDirs, l.Excludes, l.ConfigDirs, l.ConfigSkip
+	if l, ok := plugin.DetectLoader(profileDir); ok {
+		lay := l.Layout()
+		g.Loader = l.Name()
+		g.SyncDirs, g.Excludes, g.ConfigDirs, g.ConfigSkip = lay.SyncDirs, lay.Excludes, lay.ConfigDirs, lay.ConfigSkip
+	}
 	for _, name := range []string{"_default", id} {
-		if b, err := builtin.ReadFile("builtin/" + name + ".toml"); err == nil {
-			if err := decode(g, b, name+".toml"); err != nil {
-				return nil, err
+		for _, f := range builtin {
+			if b, err := fs.ReadFile(f, name+".toml"); err == nil {
+				if err := decode(g, b, name+".toml"); err != nil {
+					return nil, err
+				}
 			}
 		}
 		if userDir != "" {

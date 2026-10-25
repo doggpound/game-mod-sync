@@ -1,4 +1,8 @@
-package loaders
+// Package bepinex is the BepInEx mod loader: mods in BepInEx/plugins (the
+// server's own MMHOOK/ left alone), configs in BepInEx/config (without
+// BepInEx.cfg itself and per-player .dat files). It reads the plugins'
+// [BepInPlugin] declarations to tell which mod a config file belongs to.
+package bepinex
 
 import (
 	"bytes"
@@ -7,7 +11,38 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/doggpound/game-mod-sync/internal/plugin"
 )
+
+func init() { plugin.RegisterLoader(Loader{}) }
+
+// Loader is BepInEx.
+type Loader struct{}
+
+func (Loader) Name() string  { return "bepinex" }
+func (Loader) Label() string { return "BepInEx" }
+
+// Detect: a profile with BepInEx/core or BepInEx/plugins.
+func (Loader) Detect(dir string) bool {
+	return isDir(filepath.Join(dir, "BepInEx", "core")) || isDir(filepath.Join(dir, "BepInEx", "plugins"))
+}
+
+func (Loader) Layout() plugin.Layout {
+	return plugin.Layout{
+		SyncDirs:   []string{"BepInEx/plugins"},
+		Excludes:   []string{"MMHOOK/"},
+		ConfigDirs: []string{"BepInEx/config"},
+		ConfigSkip: []string{"/BepInEx.cfg", "*.dat"},
+	}
+}
+
+func (Loader) ConfigOwners(syncDir string) map[string]string { return BepInExOwners(syncDir) }
+
+func isDir(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi.IsDir()
+}
 
 var (
 	versionRe = regexp.MustCompile(`^\d+(\.\d+){1,3}$`)
