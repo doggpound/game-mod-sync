@@ -89,7 +89,8 @@ More can be added as plugins: [internal/plugins/README.md](internal/plugins/READ
 ## Development
 
 `go build .` and `go test ./...` (no network needed). How it works: [docs/DESIGN.md](docs/DESIGN.md).
-Changes go through pull requests; raising `VERSION` and merging publishes a release.
+Changes go through pull requests; raising `VERSION` (with notes in `docs/releases/`) and merging
+publishes a release.
 
 ## License
 

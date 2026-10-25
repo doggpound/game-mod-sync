@@ -177,13 +177,14 @@ left in place), and profiles set up with 0.x later are picked up too. Users' own
 ## Builds and releases
 
 `go build .` makes the program. Releases (`.forgejo/release.sh`, run by `release.yml` when a merge
-raises the version in `VERSION`) build it with `CGO_ENABLED=0` for Windows, macOS and Linux on
-amd64 and arm64, package each with the README and LICENSE (`.zip` for Windows, `.tar.gz`
-otherwise), add `SHA256SUMS`, and publish them on Forgejo and the GitHub mirror. The version is
-set at build time (`-X main.version=...`). At start the program asks the mirror for its latest
-release, at most once a day with a short timeout, and says when a newer one exists (not for
-development builds; `update_check = false` turns it off). Builds aren't code-signed, so Windows'
-SmartScreen and macOS' Gatekeeper warn the first time.
+raises the version in `VERSION`) build it with `CGO_ENABLED=0` for Windows, macOS and Linux on amd64
+and arm64, package each with the README and LICENSE (`.zip` for Windows, `.tar.gz` otherwise), add
+`SHA256SUMS`, and publish them on Forgejo and the GitHub mirror. The notes are
+`docs/releases/X.Y.Z.md` (else the message of the commit that names the version) plus which file to
+download. The version is set at build time (`-X main.version=...`). At start the program asks the
+mirror for its latest release, at most once a day with a short timeout, and says when a newer one
+exists (not for development builds; `update_check = false` turns it off). Builds aren't code-signed,
+so Windows' SmartScreen and macOS' Gatekeeper warn the first time.
 
 ## Tests
 
