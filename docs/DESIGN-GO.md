@@ -156,6 +156,31 @@ Client/server tags come from the bash version's cache file (shared), then Gale's
 `thunderstore_cache.json`, then Thunderstore (6 lookups at a time, 10 s each). The mod changes and
 the picked config files are reviewed together and applied with one backup timestamp.
 
+## World download
+
+D on a profile, or `-p PROFILE --download-world` (`--world NAME` picks one; `-y` takes the one the
+server runs; `-n` stops before downloading): a copy of a world from the profile's server is put in
+this computer's saves for the game, to try mod updates on it before syncing them. Nothing on the
+server is written, and it works on SFTP-only logins (everything is read over SFTP).
+
+- **Formats** (`internal/worlds`): `valheim` (newer Valheim's chunked world folders; the game's
+  own `*_backup*` worlds listed last, newest first) and `files` (`<world>.<ext>`, any game; the
+  game file lists the extensions). A format lists worlds, names the paths a world is made of, and
+  gives a save stamp. Both read through one small file-system interface, so the same code reads
+  the server (SFTP) and this computer.
+- **Server folder**: one typed in before for the profile, else AMP's `-savedir` (from the
+  instance's settings, which also name the world it runs), else the game's usual folder under the
+  login's start; when none exists it asks and remembers.
+- **This computer's folder**: picked before, else under the Windows user folder (natively, or seen
+  from WSL) and under `$HOME`; asks once when there are several.
+- **A consistent copy while the server runs**: the stamp is read before and after the copy and
+  from the copy itself; when they differ, a save happened and it copies again (3 tries; files that
+  vanished mid-copy count as a save). Valheim's stamp is the newest save number with its `.ok`
+  and all three `_main` files. Copies go to a cache folder first and only files whose size or time
+  changed are fetched again, so a second download only fetches what the server saved since.
+- **Install**: this computer's copy is moved to `game-mod-sync-backups/<time>/` next to the worlds
+  folder (`keep_backups` kept), then the copy is put in place; on failure the old one is moved back.
+
 ## Adding a game
 
 Games are TOML files, not code. The built-in ones are `internal/games/builtin/*.toml` (packed
@@ -198,7 +223,7 @@ Each phase is its own pull request and leaves the bash version untouched.
      typing it), Edit menu basics.
 3. **Configs:** comparison, owners from DLLs, client/server tags (Thunderstore), the checklist.
 4. **Full screen:** Bubble Tea screens for everything above, Edit menu (incl. Default interface), help.
-5. **World download.**
+5. **World download** (Valheim chunked worlds and `<world>.<ext>` files; AMP's save folder).
 6. **Release v1.0.0:** packaging, update check, README and screenshots for the Go version; the bash
    files are removed. With the bash launcher gone, `cmd/game-mod-sync/main.go` moves to the
    repository's root, so a plain `go build` makes `game-mod-sync` and
