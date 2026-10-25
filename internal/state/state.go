@@ -1,7 +1,8 @@
 // Package state is what game-mod-sync remembers between runs: settings
 // (config.toml) and where each profile syncs to (targets.toml), in the config
-// folder. The first time, the bash version's config and targets.tsv in the
-// same folder are read and converted (they're left in place for bash).
+// folder. The first time, the settings of the 0.x versions (shell scripts:
+// config and targets.tsv, in the same folder) are read and converted; those
+// files are left in place.
 package state
 
 import (
@@ -17,8 +18,8 @@ import (
 )
 
 // Dir is the config folder: $GMS_CONFIG_DIR, else %APPDATA%\game-mod-sync on
-// Windows, else $XDG_CONFIG_HOME or ~/.config/game-mod-sync (as the bash
-// version, also on macOS).
+// Windows, else $XDG_CONFIG_HOME or ~/.config/game-mod-sync (as 0.x did,
+// also on macOS).
 func Dir() string {
 	if d := os.Getenv("GMS_CONFIG_DIR"); d != "" {
 		return d
@@ -37,7 +38,8 @@ func Dir() string {
 
 // Config is the settings file.
 type Config struct {
-	GaleDataDir     string            `toml:"gale_data_dir,omitempty"` // empty = found automatically
+	SourceDirs      map[string]string `toml:"source_dirs,omitempty"`   // mod manager -> its data folder; empty = found automatically
+	GaleDataDir     string            `toml:"gale_data_dir,omitempty"` // in older settings: moved to SourceDirs["gale"]
 	LastBackend     string            `toml:"last_backend,omitempty"`  // offered first at setup
 	LastHost        string            `toml:"last_host,omitempty"`
 	LastUser        string            `toml:"last_user,omitempty"`
@@ -47,6 +49,7 @@ type Config struct {
 	KeepBackups     int               `toml:"keep_backups"`                // server-side backups to keep, 0 = off
 	DefaultUI       string            `toml:"default_ui,omitempty"`        // cli or tui
 	LocalWorlds     map[string]string `toml:"local_worlds,omitempty"`      // game id -> local worlds folder
+	UpdateCheck     *bool             `toml:"update_check,omitempty"`      // say when a newer release exists (default yes)
 }
 
 // DefaultConfig is used when there's no settings file.
@@ -78,14 +81,14 @@ type State struct {
 	Dir      string
 	Config   Config
 	Targets  []Target
-	Migrated bool // read from the bash version's files this time
+	Migrated bool // read from the 0.x versions' files this time
 }
 
 type targetsFile struct {
 	Target []Target `toml:"target"`
 }
 
-// Load reads the settings and targets in dir (bash files when there are no
+// Load reads the settings and targets in dir (0.x files when there are no
 // TOML ones yet; defaults when there's nothing).
 func Load(dir string) (*State, error) {
 	s := &State{Dir: dir, Config: DefaultConfig()}
@@ -100,6 +103,7 @@ func Load(dir string) (*State, error) {
 			return nil, fmt.Errorf("%s: %w", cfgFile, err)
 		}
 	}
+	s.Config.moveGaleDir()
 	if terr == nil {
 		var tf targetsFile
 		if _, err := toml.DecodeFile(tgtFile, &tf); err != nil {
@@ -107,7 +111,7 @@ func Load(dir string) (*State, error) {
 		}
 		s.Targets = tf.Target
 	}
-	// Profiles set up with the bash version since then (not saved here
+	// Profiles set up with a 0.x version since then (not saved here
 	// unless something else changes).
 	for _, t := range bashTargets(filepath.Join(dir, "targets.tsv")) {
 		if _, ok := s.Target(t.Source, t.Game, t.Profile); !ok {
@@ -123,7 +127,7 @@ func (s *State) Save() error {
 		return err
 	}
 	if err := writeTOML(filepath.Join(s.Dir, "config.toml"),
-		"# game-mod-sync settings (see docs/DESIGN-GO.md)\n", s.Config); err != nil {
+		"# game-mod-sync settings (see the README, Settings)\n", s.Config); err != nil {
 		return err
 	}
 	return writeTOML(filepath.Join(s.Dir, "targets.toml"),
@@ -181,7 +185,7 @@ func (s *State) RemoveTarget(source, game, profile string) {
 	s.Targets = out
 }
 
-// migrate reads the bash version's config (shell KEY=value lines) and
+// migrate reads the 0.x versions' config (shell KEY=value lines) and
 // targets.tsv, if they're there.
 func (s *State) migrate() error {
 	cfg, tsv := filepath.Join(s.Dir, "config"), filepath.Join(s.Dir, "targets.tsv")
@@ -201,6 +205,7 @@ func (s *State) migrate() error {
 		f.Close()
 		c := &s.Config
 		c.GaleDataDir = vals["GALE_DATA_DIR"]
+		c.moveGaleDir()
 		c.LastBackend, c.LastHost, c.LastUser = vals["LAST_BACKEND"], vals["LAST_HOST"], vals["LAST_USER"]
 		if v := vals["AMP_INSTANCES_DIR"]; v != "" {
 			c.AMPInstancesDir = v
@@ -230,7 +235,7 @@ func (s *State) migrate() error {
 	return nil
 }
 
-// bashTargets reads the bash version's targets.tsv:
+// bashTargets reads the 0.x versions' targets.tsv:
 // source  game  profile  backend  user@host  root  [kept]  [worlds]
 func bashTargets(path string) []Target {
 	b, err := os.ReadFile(path)
@@ -261,7 +266,7 @@ func bashTargets(path string) []Target {
 	return out
 }
 
-// shellUnquote reads a value as bash's printf %q writes it: ” or 'a b' or a\ b.
+// shellUnquote reads a value as the 0.x scripts wrote it (bash's printf %q): ” or 'a b' or a\ b.
 func shellUnquote(v string) string {
 	if strings.HasPrefix(v, "'") && strings.HasSuffix(v, "'") && len(v) >= 2 {
 		return strings.ReplaceAll(v[1:len(v)-1], `'\''`, "'")
@@ -277,4 +282,18 @@ func shellUnquote(v string) string {
 		b.WriteByte(v[i])
 	}
 	return b.String()
+}
+
+// moveGaleDir moves gale_data_dir (older settings) into source_dirs.
+func (c *Config) moveGaleDir() {
+	if c.GaleDataDir == "" {
+		return
+	}
+	if c.SourceDirs == nil {
+		c.SourceDirs = map[string]string{}
+	}
+	if c.SourceDirs["gale"] == "" {
+		c.SourceDirs["gale"] = c.GaleDataDir
+	}
+	c.GaleDataDir = ""
 }

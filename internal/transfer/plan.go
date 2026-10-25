@@ -104,7 +104,7 @@ type Change struct {
 }
 
 // Summary groups the plan by mod (the first part of each path), the way the
-// bash version's preview does: a mod whose folder appears is new, one whose
+// preview has always done: a mod whose folder appears is new, one whose
 // folder goes is removed, anything else that changes is updated. Sorted new,
 // updated, removed, then by name.
 func (p Plan) Summary() []Change {

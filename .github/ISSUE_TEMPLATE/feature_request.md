@@ -13,10 +13,10 @@ labels: []
 
 ## Kind of change
 
-- [ ] New game (`plugins/games/`)
-- [ ] New mod loader (`plugins/loaders/`)
-- [ ] New server type (`plugins/backends/`)
-- [ ] New profile source / mod manager (`plugins/sources/`)
+- [ ] New game (`internal/plugins/games/`)
+- [ ] New mod loader (`internal/plugins/loaders/`)
+- [ ] New server type (`internal/plugins/servers/`)
+- [ ] New profile source / mod manager (`internal/plugins/sources/`)
 - [ ] Change to the sync, menus or interfaces
 
 ## Alternatives you've considered

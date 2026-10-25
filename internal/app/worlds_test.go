@@ -89,7 +89,7 @@ func TestDownloadMenuOffersTheRunningWorldFirst(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
-	if !strings.Contains(out, "1) Midgard") || !strings.Contains(out, "the server runs this one") {
+	if !strings.Contains(out, "1) Midgard") || !strings.Contains(out, "the server's world") {
 		t.Errorf("menu:\n%s", out)
 	}
 	if !exists(filepath.Join(w.lw, "Ashlands", "_main.55.ok")) {

@@ -37,7 +37,7 @@ LOCAL_WORLDS=valheim=/mnt/c/w
 	if !s.Migrated {
 		t.Error("not marked as migrated")
 	}
-	want := Config{GaleDataDir: "/data/Gale Data", LastBackend: "amp", LastHost: "game.example.com", LastUser: "amp",
+	want := Config{SourceDirs: map[string]string{"gale": "/data/Gale Data"}, LastBackend: "amp", LastHost: "game.example.com", LastUser: "amp",
 		AMPInstancesDir: ".ampdata/instances", ExtraExcludes: []string{"a.dll", "b.dll"}, KeepBackups: 3,
 		DefaultUI: "tui", LocalWorlds: map[string]string{"valheim": "/mnt/c/w"}}
 	if !reflect.DeepEqual(s.Config, want) {

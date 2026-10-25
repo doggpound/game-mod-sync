@@ -1,0 +1,35 @@
+# Defaults for every game without its own <game id>.toml. <game id> is the
+# folder name Gale uses (e.g. valheim, lethal-company). A game file only needs
+# the settings it changes; your own copy in the config folder's games/ folder
+# changes them again.
+
+# Shown in menus. Default: the id in title case (lethal-company -> Lethal Company).
+# name = ""
+
+# Where mods and configs live comes from the mod loader (BepInEx: plugins,
+# config). Set any of these to override it:
+#   sync_dirs    mod folders, mirrored (only folders the mod manager fully owns)
+#   excludes     paths inside sync_dirs never sent or deleted (rsync-style patterns)
+#   config_dirs  config folders: offered per file, never deleted
+#   config_skip  config paths never offered
+
+# Folder that identifies the game on the server. Default: the first sync_dirs entry.
+# game_marker = ""
+
+# Case-insensitive regex: server folders that match are listed first at setup.
+# Default: the id with dashes optional (lethal-company matches LethalCompany01).
+# server_match = ""
+
+# Files a server type installs itself when one of its settings is on:
+# [managed]
+# amp = ["valheim_plus_install=ValheimPlus.dll"]
+
+# Thunderstore categories that mark a mod as client-side or server-side.
+# thunderstore_community = ""   (default: the game id)
+tag_client = "^(Client-side|Clientside|Client-only|Client Side)$"
+tag_server = "^(Server-side|Serverside|Server-only|Server Side)$"
+
+# Shown after a successful sync.
+after_sync = "Restart the server so it loads the new mods."
+
+# World download: off unless world_format is set (see valheim.toml).

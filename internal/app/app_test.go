@@ -2,6 +2,9 @@ package app
 
 import (
 	"bytes"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,6 +15,7 @@ import (
 	"github.com/doggpound/game-mod-sync/internal/state"
 	"github.com/doggpound/game-mod-sync/internal/testserver"
 	"github.com/doggpound/game-mod-sync/internal/ui/text"
+	"github.com/doggpound/game-mod-sync/internal/update"
 )
 
 type appSetup struct {
@@ -34,7 +38,7 @@ func newAppSetup(t *testing.T) *appSetup {
 	write(t, filepath.Join(s.root, "BepInEx", "plugins", "Old", "Old.dll"), "old")
 	t.Setenv("GMS_CONFIG_DIR", s.cfg)
 	st, _ := state.Load(s.cfg)
-	st.Config.GaleDataDir = gale
+	st.Config.SourceDirs = map[string]string{"gale": gale}
 	st.Config.AMPInstancesDir = filepath.ToSlash(filepath.Join(srv.Root, ".ampdata", "instances"))
 	st.SetTarget(state.Target{Source: "gale", Game: "valheim", Profile: "MyProfile", Backend: "amp",
 		Host: srv.Host, Port: srv.Port, User: "amp", Root: s.root})
@@ -95,7 +99,7 @@ func TestSyncOneProfile(t *testing.T) {
 		exists(filepath.Join(s.root, "BepInEx", "plugins", "Old")) {
 		t.Errorf("server not synced:\n%s", out)
 	}
-	for _, want := range []string{"Valheim / MyProfile  ->  Valheim01 on 127.0.0.1", "+ new      Azumatt-AzuClock", "Restart the server"} {
+	for _, want := range []string{"Valheim / MyProfile  →  Valheim01 on 127.0.0.1", "+ new      Azumatt-AzuClock", "Restart the server"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
@@ -178,5 +182,36 @@ func TestListShowsTargets(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Valheim / MyProfile -> Valheim01 on 127.0.0.1") {
 		t.Errorf("%s", out.String())
+	}
+}
+
+func TestSaysWhenANewerReleaseExists(t *testing.T) {
+	s := newAppSetup(t)
+	gh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"tag_name":"v1.1.0","html_url":"https://example.com/releases/tag/v1.1.0"}`)
+	}))
+	t.Cleanup(gh.Close)
+	run := func(version string, off bool) string {
+		var out bytes.Buffer
+		st, _ := state.Load(s.cfg)
+		if off {
+			no := false
+			st.Config.UpdateCheck = &no
+		}
+		a := &App{UI: text.New(strings.NewReader("x\n"), &out), State: st, Version: version,
+			Updates: &update.Checker{URL: gh.URL, CachePath: filepath.Join(t.TempDir(), "latest.json")}}
+		if err := a.Main(); err != nil {
+			t.Fatal(err)
+		}
+		return out.String()
+	}
+	if out := run("1.0.0", false); !strings.Contains(out, "game-mod-sync 1.1.0 is available (you have 1.0.0): https://example.com/releases/tag/v1.1.0") {
+		t.Errorf("not said:\n%s", out)
+	}
+	if out := run("1.0.0", true); strings.Contains(out, "is available") {
+		t.Errorf("said although update_check = false:\n%s", out)
+	}
+	if out := run("1.1.0", false); strings.Contains(out, "is available") {
+		t.Errorf("said for the same version:\n%s", out)
 	}
 }

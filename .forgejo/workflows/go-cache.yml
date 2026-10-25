@@ -43,7 +43,7 @@ jobs:
           # The same compiles as tests.yml, so they're in the build cache.
           go vet ./...
           go test -count=1 -run '^$' ./...   # compiles the tests without running them
-          go build -trimpath -o /dev/null ./cmd/game-mod-sync
+          go build -trimpath -o /dev/null .
           for p in windows/amd64 windows/arm64 linux/arm64 darwin/amd64 darwin/arm64; do
             GOOS=${p%/*} GOARCH=${p#*/} go vet ./...
           done

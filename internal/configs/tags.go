@@ -16,7 +16,7 @@ import (
 
 // Tags says whether mods run on clients, servers or both, from their
 // Thunderstore categories (Valheim: "Client-side", "Server-side"). Answers are
-// cached for good in CachePath (the bash version's file: "mod<TAB>time<TAB>cat|cat";
+// cached for good in CachePath (shared with 0.x: "mod<TAB>time<TAB>cat|cat";
 // a mod Thunderstore doesn't know is cached with no categories). Before going
 // online, Known (e.g. Gale's own cache) is asked too.
 type Tags struct {

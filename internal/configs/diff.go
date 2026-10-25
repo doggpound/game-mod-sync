@@ -1,7 +1,7 @@
 // Package configs compares a profile's config folders with the server's, works
 // out which mod each file belongs to and whether that mod is client-only, and
 // describes what differs. Config files are offered per file and never deleted
-// on the server (see the bash version's docs/DESIGN.md, "Configs").
+// on the server (see docs/DESIGN.md, "Config files").
 package configs
 
 import (

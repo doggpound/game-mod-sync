@@ -5,110 +5,77 @@
 <circle cx="18" cy="15" r="6" fill="#ff5f57"/><circle cx="38" cy="15" r="6" fill="#febc2e"/><circle cx="58" cy="15" r="6" fill="#28c840"/>
 <text x="434" y="20" fill="#a0a0a0" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" text-anchor="middle">game-mod-sync --tui</text>
 <g font-family="Cascadia Mono,Consolas,DejaVu Sans Mono,Menlo,monospace" font-size="14">
-<rect x="14.0" y="44" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="22.4" y="57" fill="#cccccc" textLength="159.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">game-mod-sync 0.0.1</text>
-<rect x="14.0" y="61" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="78" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="95" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="112" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="129" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="146" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="163" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="180" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="180" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="736.4" y="180" width="118.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="193" fill="#0c0c0c" textLength="243.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">┌───────────────────────────┤</text>
-<text x="375.2" y="193" fill="#c50f1f" font-weight="bold" textLength="100.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Config files</text>
-<text x="484.4" y="193" fill="#0c0c0c" textLength="252.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">├────────────────────────────┐</text>
-<rect x="14.0" y="197" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="197" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="197" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="210" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ Ticked files are copied to the server.                                │</text>
-<rect x="14.0" y="214" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="214" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="214" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="227" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ Not copied (client mods only): FastLink                               │</text>
-<rect x="14.0" y="231" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="231" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="231" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="244" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│                                                                       │</text>
-<rect x="14.0" y="248" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="248" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="140.0" y="248" width="580.2" height="17.6" fill="#5f0087" shape-rendering="crispEdges"/>
-<rect x="719.6" y="248" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="248" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="261" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<text x="198.8" y="261" fill="#f2f2f2" font-weight="bold" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">STATUS   SIDE    MOD            FILE</text>
-<text x="728.0" y="261" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<rect x="14.0" y="265" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="265" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="140.0" y="265" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="719.6" y="265" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="265" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="278" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<text x="165.2" y="278" fill="#f2f2f2" textLength="470.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[*] new      both    AzuClock       Azumatt.AzuClock.cfg</text>
-<text x="728.0" y="278" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<rect x="14.0" y="282" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="282" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="140.0" y="282" width="571.8" height="17.6" fill="#c50f1f" shape-rendering="crispEdges"/>
-<rect x="711.2" y="282" width="9.0" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="719.6" y="282" width="9.0" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="728.0" y="282" width="9.0" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="282" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="295" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<text x="148.4" y="295" fill="#f2f2f2" font-weight="bold" textLength="562.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">▾ [ ] differs  server  ServersideQoL  argusmagnus.ServersideQoL.cfg</text>
-<text x="728.0" y="295" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<rect x="14.0" y="299" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="299" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="140.0" y="299" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="719.6" y="299" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="299" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="312" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<text x="249.2" y="312" fill="#bcbcbc" textLength="142.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[AutoStore] Range</text>
-<text x="728.0" y="312" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<rect x="14.0" y="316" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="316" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="140.0" y="316" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="719.6" y="316" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="316" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="329" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<text x="282.8" y="329" fill="#bcbcbc" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">server: 4</text>
-<text x="728.0" y="329" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<rect x="14.0" y="333" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="333" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="140.0" y="333" width="580.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="719.6" y="333" width="17.4" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="333" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="346" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<text x="282.8" y="346" fill="#bcbcbc" textLength="75.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">yours:  8</text>
-<text x="728.0" y="346" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<rect x="14.0" y="350" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="350" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="350" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="363" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│                                                                       │</text>
-<rect x="14.0" y="367" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="367" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="367" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="380" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│ H - Help Menu                                                         │</text>
-<rect x="14.0" y="384" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="384" width="177.0" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="299.6" y="384" width="34.2" height="17.6" fill="#c50f1f" shape-rendering="crispEdges"/>
-<rect x="333.2" y="384" width="403.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="384" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="397" fill="#0c0c0c" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
-<text x="299.6" y="397" fill="#f2f2f2" font-weight="bold" textLength="33.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&lt;Ok&gt;</text>
-<text x="492.8" y="397" fill="#0c0c0c" textLength="243.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">&lt;Back&gt;                      │</text>
-<rect x="14.0" y="401" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="123.2" y="401" width="613.8" height="17.6" fill="#cccccc" shape-rendering="crispEdges"/>
-<rect x="744.8" y="401" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<text x="123.2" y="414" fill="#0c0c0c" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">└───────────────────────────────────────────────────────────────────────┘</text>
-<rect x="14.0" y="418" width="118.2" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="744.8" y="418" width="109.8" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="435" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="452" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="469" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="486" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="503" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="520" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
-<rect x="14.0" y="537" width="840.6" height="17.6" fill="#881798" shape-rendering="crispEdges"/>
+<rect x="30.8" y="61" width="126.6" height="17.6" fill="#9d7bff" shape-rendering="crispEdges"/>
+<text x="39.2" y="74" fill="#ffffff" font-weight="bold" textLength="109.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">game-mod-sync</text>
+<text x="165.2" y="74" fill="#8a8a8a" textLength="42.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">1.0.0</text>
+<text x="232.4" y="74" fill="#cccccc" font-weight="bold" textLength="100.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Config files</text>
+<text x="30.8" y="108" fill="#8a8a8a" textLength="478.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╭───────────────────────────────────────────────────────╮</text>
+<text x="30.8" y="125" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="47.6" y="125" fill="#cccccc" textLength="445.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Valheim / MyProfile  →  Valheim01 on game.example.com</text>
+<text x="501.2" y="125" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="142" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="72.8" y="142" fill="#cccccc" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">+ new      ArgusMagnus-ServersideQoL</text>
+<text x="501.2" y="142" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="159" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="72.8" y="159" fill="#cccccc" textLength="226.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">+ new      Azumatt-AzuClock</text>
+<text x="501.2" y="159" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="176" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="72.8" y="176" fill="#cccccc" textLength="268.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">~ updated  ValheimModding-Jotunn</text>
+<text x="501.2" y="176" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="193" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="72.8" y="193" fill="#cccccc" textLength="210.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">- removed  Old-RemovedMod</text>
+<text x="501.2" y="193" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="210" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="47.6" y="210" fill="#cccccc" textLength="260.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">3 file(s) to send, 1 to delete.</text>
+<text x="501.2" y="210" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="227" fill="#8a8a8a" textLength="478.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╰───────────────────────────────────────────────────────╯</text>
+<text x="30.8" y="244" fill="#cccccc" font-weight="bold" textLength="319.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Ticked files are copied to the server.</text>
+<text x="30.8" y="261" fill="#d29922" textLength="327.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Not copied (client mods only): AzuClock</text>
+<text x="30.8" y="278" fill="#9d7bff" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╭───────────────────────────────────────────────────────────────────────╮</text>
+<text x="30.8" y="295" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="114.8" y="295" fill="#8a8a8a" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">STATUS   SIDE    MOD            FILE</text>
+<text x="635.6" y="295" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="312" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="64.4" y="312" fill="#3fb950" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[x]</text>
+<text x="114.8" y="312" fill="#cccccc" textLength="512.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">new      server  ServersideQoL  argusmagnus.ServersideQoL.cfg</text>
+<text x="635.6" y="312" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="329" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="47.6" y="329" fill="#9d7bff" font-weight="bold" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">❯</text>
+<text x="64.4" y="329" fill="#cccccc" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[ ]</text>
+<text x="98.0" y="329" fill="#8a8a8a" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">▾</text>
+<text x="114.8" y="329" fill="#9d7bff" font-weight="bold" textLength="470.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">differs  both    AzuAutoStore   Azumatt.AzuAutoStore.cfg</text>
+<text x="635.6" y="329" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="346" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="148.4" y="346" fill="#8a8a8a" textLength="235.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[General] Lock Configuration</text>
+<text x="635.6" y="346" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="363" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="182.0" y="363" fill="#8a8a8a" textLength="92.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">server: Off</text>
+<text x="635.6" y="363" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="380" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="182.0" y="380" fill="#8a8a8a" textLength="84.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">yours:  On</text>
+<text x="635.6" y="380" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="397" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="148.4" y="397" fill="#8a8a8a" textLength="126.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">[General] Range</text>
+<text x="635.6" y="397" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="414" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="182.0" y="414" fill="#8a8a8a" textLength="84.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">server: 10</text>
+<text x="635.6" y="414" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="431" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="182.0" y="431" fill="#8a8a8a" textLength="84.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">yours:  20</text>
+<text x="635.6" y="431" fill="#9d7bff" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">│</text>
+<text x="30.8" y="448" fill="#9d7bff" textLength="613.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">╰───────────────────────────────────────────────────────────────────────╯</text>
+<text x="30.8" y="465" fill="#bbbbbb" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">↑/↓</text>
+<text x="64.4" y="465" fill="#8a8a8a" textLength="50.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">move •</text>
+<text x="123.2" y="465" fill="#bbbbbb" textLength="42.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">space</text>
+<text x="173.6" y="465" fill="#8a8a8a" textLength="50.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">tick •</text>
+<text x="232.4" y="465" fill="#bbbbbb" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">→/←</text>
+<text x="266.0" y="465" fill="#8a8a8a" textLength="100.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">open/close •</text>
+<text x="375.2" y="465" fill="#bbbbbb" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">a/n</text>
+<text x="408.8" y="465" fill="#8a8a8a" textLength="84.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">all/none •</text>
+<text x="501.2" y="465" fill="#bbbbbb" textLength="42.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">enter</text>
+<text x="551.6" y="465" fill="#8a8a8a" textLength="50.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">done •</text>
+<text x="610.4" y="465" fill="#bbbbbb" textLength="25.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">esc</text>
+<text x="644.0" y="465" fill="#8a8a8a" textLength="50.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">back •</text>
+<text x="702.8" y="465" fill="#bbbbbb" textLength="8.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">?</text>
+<text x="719.6" y="465" fill="#8a8a8a" textLength="33.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">help</text>
 </g></svg>

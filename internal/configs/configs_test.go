@@ -70,7 +70,7 @@ func TestFullCfg(t *testing.T) {
 	}
 }
 
-// A non-.cfg config that differs is shown as lines (this crashed the bash version).
+// A non-.cfg config that differs is shown as lines (this once crashed the 0.x scripts).
 func TestFullLines(t *testing.T) {
 	server := "Throttle:\n  # comment\n  Max: 50\nOther: 1\n"
 	mine := "Throttle:\n  Max: 100\nOther: 1\nAdded: yes\n"
