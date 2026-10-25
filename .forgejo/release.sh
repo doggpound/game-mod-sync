@@ -57,55 +57,36 @@ v=$(version_at "$sha")
 # Previous version: the highest tag below this one
 prev=$(git tag -l 'v*' | grep -vx "$tag" | { cat; echo "$tag"; } | sort -V | grep -B1 -x "$tag" | grep -vx "$tag" || true)
 if [ -n "$prev" ]; then range="$prev..$sha"; else range=$sha; fi
-# (merge commits and an empty "Initial commit" are left out)
-commits=()
-while read -r c; do
-  [ "$(git log -1 --format=%s "$c")" = "Initial commit" ] && [ -z "$(git log -1 --format=%b "$c")" ] && continue
-  commits+=("$c")
-done < <(git rev-list --reverse --no-merges "$range")
-[ ${#commits[@]} -gt 0 ] || commits=("$sha")
-# The first release only describes its own commit, not the whole history.
-[ -n "$prev" ] || commits=("$(git rev-list -1 --no-merges "$sha")")
-
 # The release is named just the tag (vX.Y.Z, same on Forgejo and GitHub). Its
-# one-line summary, at the top of the notes: the commit that names this version,
-# else the last one that set VERSION, else the oldest in the range.
-title=$tag summary=""
-for c in "${commits[@]}"; do
-  s=$(git log -1 --format=%s "$c")
-  case $s in "$tag:"*|"$tag "*) summary=${s#"$tag"}; summary=${summary#:}; summary=${summary# } ;; esac
-done
-if [ -z "$summary" ]; then
-  c=$(git log -1 --format=%H "$range" -- VERSION || true)
-  [ -n "$c" ] || c=$(git log -1 --format=%H -G'^VERSION=' "$range" -- || true)
-  summary=$(git log -1 --format=%s "${c:-${commits[0]}}")
-fi
-
+# notes: docs/releases/X.Y.Z.md as it is on the branch being run (so they can
+# be fixed after the release by running it again), else the message of the
+# commit that names the version ("vX.Y.Z: ..."), else of the last one that
+# changed VERSION. Not every commit: that's what the compare link is for.
+title=$tag
 strip() { grep -Ev '^(Co-Authored-By|Claude-Session|Signed-off-by):' | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'; }
+if [ -f "docs/releases/$ver.md" ]; then
+  intro=$(cat "docs/releases/$ver.md")
+else
+  c=$(git log -1 --no-merges --format=%H -E --grep="^${tag//./\\.}[: ]" "$range" || true)
+  [ -n "$c" ] || c=$(git log -1 --no-merges --format=%H "$range" -- VERSION || true)
+  [ -n "$c" ] || c=$(git log -1 --no-merges --format=%H -G'^VERSION=' "$range" -- || true)
+  c=${c:-$sha}
+  summary=$(git log -1 --format=%s "$c"); summary=${summary#"$tag"}; summary=${summary#:}; summary=${summary# }
+  intro=$(printf '**%s**\n\n%s' "$summary" "$(git log -1 --format=%b "$c" | strip)")
+fi
 notes=$(
-  printf '**%s**\n\n' "$summary"
-  if [ ${#commits[@]} -eq 1 ]; then
-    git log -1 --format=%b "${commits[0]}" | strip
-  else
-    for c in "${commits[@]}"; do
-      printf '### %s\n\n' "$(git log -1 --format=%s "$c")"
-      git log -1 --format=%b "$c" | strip
-      printf '\n\n'
-    done
-  fi
-  printf '\n---\n'
-  printf 'Committed %s. ' "$(git log -1 --format=%ad --date=short "$sha")"
-  # @@WEB@@ becomes the repo's address on each site
-  if [ -n "$prev" ]; then printf 'Changes since %s: @@WEB@@/compare/%s...%s\n\n' "$prev" "$prev" "$tag"; else printf '\n\n'; fi
+  printf '%s\n\n' "$intro"
   if git cat-file -e "$sha:go.mod" 2>/dev/null; then
-    printf '**Download** the file for your computer, extract it and run `game-mod-sync` (nothing else to install):\n\n'
-    printf -- '- Windows: `game-mod-sync-%s-windows-amd64.zip` (`-arm64` for ARM PCs); run `game-mod-sync.exe` in Windows Terminal\n' "$ver"
+    printf '**Download** the file for your computer, extract it and run `game-mod-sync`:\n\n'
+    printf -- '- Windows: `game-mod-sync-%s-windows-amd64.zip` (`-arm64` for ARM)\n' "$ver"
     printf -- '- macOS: `game-mod-sync-%s-macos-arm64.tar.gz` (Apple silicon) or `-macos-amd64` (Intel)\n' "$ver"
     printf -- '- Linux: `game-mod-sync-%s-linux-amd64.tar.gz` (or `-linux-arm64`)\n\n' "$ver"
-    printf '`SHA256SUMS` has the files'"'"' checksums. See the README for setup.\n'
+    printf 'Not code-signed yet: on Windows click **More info → Run anyway**, on macOS right-click → **Open** the first time.\n\n'
   else
-    printf '**Install:** download `game-mod-sync-%s.tar.gz`, extract it and run `./game-mod-sync` (or `./game-mod-sync --tui`). See the README for setup.\n' "$ver"
+    printf '**Install:** download `game-mod-sync-%s.tar.gz`, extract it and run `./game-mod-sync`. See the README for setup.\n\n' "$ver"
   fi
+  # @@WEB@@ becomes the repo's address on each site
+  [ -z "$prev" ] || printf 'All changes: @@WEB@@/compare/%s...%s\n' "$prev" "$tag"
 )
 notes=$(printf '%s\n' "$notes" | cat -s)    # no runs of blank lines
 
