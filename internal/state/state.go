@@ -48,6 +48,7 @@ type Config struct {
 	KeepBackups     int               `toml:"keep_backups"`                // server-side backups to keep, 0 = off
 	DefaultUI       string            `toml:"default_ui,omitempty"`        // cli or tui
 	LocalWorlds     map[string]string `toml:"local_worlds,omitempty"`      // game id -> local worlds folder
+	UpdateCheck     *bool             `toml:"update_check,omitempty"`      // say when a newer release exists (default yes)
 }
 
 // DefaultConfig is used when there's no settings file.

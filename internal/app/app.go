@@ -20,6 +20,7 @@ import (
 	"github.com/doggpound/game-mod-sync/internal/ui"
 	"github.com/doggpound/game-mod-sync/internal/ui/text"
 	fulltui "github.com/doggpound/game-mod-sync/internal/ui/tui"
+	"github.com/doggpound/game-mod-sync/internal/update"
 )
 
 // Options are the command line's choices.
@@ -46,6 +47,8 @@ type App struct {
 	Secrets secrets.Store
 	// Tags looks up mods' client/server tags; nil = Thunderstore with the usual cache.
 	Tags *configs.Tags
+	// Updates checks for a newer release; nil = the public mirror's latest.
+	Updates *update.Checker
 
 	galeDir string  // Gale's data folder, once found
 	entries []Entry // the profiles listed in the menu
@@ -135,6 +138,7 @@ func (a *App) Main() error {
 		return err
 	}
 	a.entries = entries
+	a.checkForUpdate()
 	if len(entries) == 0 {
 		msg := "no profiles with mods found"
 		if a.Opts.Game != "" {
@@ -498,4 +502,19 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 		return nil
 	}
 	return a.Main()
+}
+
+// checkForUpdate says when a newer release exists (at most one lookup a day;
+// update_check = false turns it off).
+func (a *App) checkForUpdate() {
+	if u := a.State.Config.UpdateCheck; u != nil && !*u {
+		return
+	}
+	c := update.Checker{}
+	if a.Updates != nil {
+		c = *a.Updates
+	}
+	if r := c.Newer(a.Version); r != nil {
+		a.UI.OK(fmt.Sprintf("game-mod-sync %s is available (you have %s): %s", strings.TrimPrefix(r.Tag, "v"), a.Version, r.URL))
+	}
 }
