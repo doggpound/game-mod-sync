@@ -336,6 +336,9 @@ func (a *App) dial(t state.Target) (*remote.Client, error) {
 	if port == 0 {
 		port = 22
 	}
+	// ~/.ssh/config can give the real address, a port and key files; the
+	// saved password and known_hosts go by what's really connected to.
+	rs := remote.Resolve(t.Host, port)
 	store := a.Secrets
 	if store == nil {
 		store = secrets.System{}
@@ -343,12 +346,12 @@ func (a *App) dial(t state.Target) (*remote.Client, error) {
 	account := fmt.Sprintf("%s@%s:%d", t.User, t.Host, port)
 	pw := &passwords{ui: a.UI, store: store, account: account,
 		question: fmt.Sprintf("Password for %s@%s", t.User, t.Host)}
-	auth, closeAgent := remote.Auth(remote.DefaultKeyFiles(), pw.next)
+	auth, closeAgent := remote.Auth(append(rs.Keys, remote.DefaultKeyFiles()...), pw.next)
 	defer closeAgent()
 	a.UI.Info("Connecting to " + t.User + "@" + t.Host + " ...")
 	c, err := remote.Dial(remote.Options{
-		Host: t.Host, Port: port, User: t.User, Auth: auth,
-		HostKey: hk, HostKeyAlgorithms: remote.KnownAlgorithms(kh, t.Host, port),
+		Host: rs.Host, Port: rs.Port, User: t.User, Auth: auth,
+		HostKey: hk, HostKeyAlgorithms: remote.KnownAlgorithms(kh, rs.Host, rs.Port),
 	})
 	if err != nil {
 		return nil, err
