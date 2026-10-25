@@ -21,10 +21,10 @@ import (
 	"strings"
 
 	"github.com/doggpound/game-mod-sync/internal/app"
+	_ "github.com/doggpound/game-mod-sync/internal/plugins/all" // every plugin
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
 	"github.com/doggpound/game-mod-sync/internal/ui/text"
-	_ "github.com/doggpound/game-mod-sync/plugins/all" // every plugin
 )
 
 // version is set when releases are built: -ldflags "-X main.version=1.0.0".

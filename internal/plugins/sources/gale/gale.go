@@ -16,19 +16,19 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
 )
 
-func init() { plugin.RegisterSource(Source{}) }
+func init() { plugins.RegisterSource(Source{}) }
 
 // Source is Gale.
 type Source struct{}
 
-func (Source) Name() string                                  { return "gale" }
-func (Source) Label() string                                 { return "Gale" }
-func (Source) Find() []string                                { return Candidates() }
-func (Source) Profiles(dir string) ([]plugin.Profile, error) { return List(dir) }
-func (Source) ModTags(dir, game string) map[string]string    { return ModTags(dir, game) }
+func (Source) Name() string                                   { return "gale" }
+func (Source) Label() string                                  { return "Gale" }
+func (Source) Find() []string                                 { return Candidates() }
+func (Source) Profiles(dir string) ([]plugins.Profile, error) { return List(dir) }
+func (Source) ModTags(dir, game string) map[string]string     { return ModTags(dir, game) }
 
 const folder = "com.kesomannen.gale"
 
@@ -74,12 +74,12 @@ func Candidates() []string {
 
 // List returns every profile of every game in the data folder root, sorted
 // by game then profile. Folders without a profiles/ folder are ignored.
-func List(root string) ([]plugin.Profile, error) {
+func List(root string) ([]plugins.Profile, error) {
 	games, err := os.ReadDir(root)
 	if err != nil {
 		return nil, err
 	}
-	var out []plugin.Profile
+	var out []plugins.Profile
 	for _, g := range games {
 		if !g.IsDir() {
 			continue
@@ -91,7 +91,7 @@ func List(root string) ([]plugin.Profile, error) {
 		}
 		for _, p := range profiles {
 			if p.IsDir() {
-				out = append(out, plugin.Profile{Game: g.Name(), Name: p.Name(), Dir: filepath.Join(pdir, p.Name())})
+				out = append(out, plugins.Profile{Game: g.Name(), Name: p.Name(), Dir: filepath.Join(pdir, p.Name())})
 			}
 		}
 	}

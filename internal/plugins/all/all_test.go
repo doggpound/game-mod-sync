@@ -17,19 +17,22 @@ func TestEveryPluginIsListed(t *testing.T) {
 		if err != nil || !d.IsDir() || p == ".." || filepath.Base(p) == "all" {
 			return err
 		}
+		// A plugin registers itself in init; a folder without one (shared
+		// code such as worlds/) isn't a plugin.
 		goFiles, _ := filepath.Glob(filepath.Join(p, "*.go"))
-		hasCode := false
+		registers := false
 		for _, f := range goFiles {
-			if !strings.HasSuffix(f, "_test.go") {
-				hasCode = true
+			b, _ := os.ReadFile(f)
+			if !strings.HasSuffix(f, "_test.go") && strings.Contains(string(b), "\nfunc init()") {
+				registers = true
 			}
 		}
-		if !hasCode {
+		if !registers {
 			return nil
 		}
-		imp := "github.com/doggpound/game-mod-sync/plugins/" + filepath.ToSlash(strings.TrimPrefix(p, ".."+string(filepath.Separator)))
+		imp := "github.com/doggpound/game-mod-sync/internal/plugins/" + filepath.ToSlash(strings.TrimPrefix(p, ".."+string(filepath.Separator)))
 		if !strings.Contains(string(list), `"`+imp+`"`) {
-			t.Errorf("%s isn't in plugins/all/all.go - add: _ %q", p, imp)
+			t.Errorf("%s isn't in internal/plugins/all/all.go - add: _ %q", p, imp)
 		}
 		return nil
 	})

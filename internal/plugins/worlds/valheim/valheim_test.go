@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/doggpound/game-mod-sync/internal/worlds"
+	"github.com/doggpound/game-mod-sync/internal/plugins/worlds"
 )
 
 // valheimWorld writes a chunked Valheim world with save number save.

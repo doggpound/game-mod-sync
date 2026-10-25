@@ -4,11 +4,11 @@
 package ssh
 
 import (
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
 	"github.com/doggpound/game-mod-sync/internal/state"
 )
 
-func init() { plugin.RegisterServer(Server{}) }
+func init() { plugins.RegisterServer(Server{}) }
 
 // Server is the "Other" server type.
 type Server struct{}

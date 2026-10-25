@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/doggpound/game-mod-sync/internal/games"
-	_ "github.com/doggpound/game-mod-sync/plugins/all"
+	_ "github.com/doggpound/game-mod-sync/internal/plugins/all"
+	. "github.com/doggpound/game-mod-sync/internal/plugins/games"
 )
 
 // Every game file must load, so a typo fails here and not for users.

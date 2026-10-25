@@ -1,8 +1,3 @@
-// Package games builds each game's settings: what to sync, what to leave
-// alone, how to recognise it on a server. The game files (plugins/games/*.toml,
-// registered with Register) are read in order - _default.toml, then
-// <game id>.toml - after the mod loader's defaults, and a file with the same
-// name in the user's games folder changes them again (only what it lists).
 package games
 
 import (
@@ -16,7 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
 )
 
 var builtin []fs.FS
@@ -74,7 +69,7 @@ type Worlds struct {
 // loader; userDir is the user's games folder (may be "").
 func Load(id, profileDir, userDir string) (*Game, error) {
 	g := &Game{ID: id}
-	if l, ok := plugin.DetectLoader(profileDir); ok {
+	if l, ok := plugins.DetectLoader(profileDir); ok {
 		lay := l.Layout()
 		g.Loader = l.Name()
 		g.SyncDirs, g.Excludes, g.ConfigDirs, g.ConfigSkip = lay.SyncDirs, lay.Excludes, lay.ConfigDirs, lay.ConfigSkip

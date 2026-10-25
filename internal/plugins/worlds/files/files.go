@@ -11,13 +11,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
-	"github.com/doggpound/game-mod-sync/internal/worlds"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
+	"github.com/doggpound/game-mod-sync/internal/plugins/worlds"
 )
 
-func init() { plugin.RegisterWorldFormat("files", newFormat) }
+func init() { plugins.RegisterWorldFormat("files", newFormat) }
 
-func newFormat(ext []string) (plugin.WorldFormat, error) {
+func newFormat(ext []string) (plugins.WorldFormat, error) {
 	if len(ext) == 0 {
 		return nil, fmt.Errorf("world format files needs its extensions (worlds.files in the game file)")
 	}

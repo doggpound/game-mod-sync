@@ -12,8 +12,8 @@ import (
 	"golang.org/x/term"
 
 	"github.com/doggpound/game-mod-sync/internal/configs"
-	"github.com/doggpound/game-mod-sync/internal/games"
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
+	"github.com/doggpound/game-mod-sync/internal/plugins/games"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/transfer"
 	"github.com/doggpound/game-mod-sync/internal/ui"
@@ -60,8 +60,8 @@ func (a *App) tags(game string) *configs.Tags {
 	// Mod managers that know their mods' tags offline are asked first.
 	var known []func() map[string]string
 	for _, e := range a.entries {
-		if s, ok := plugin.SourceNamed(e.Source); ok {
-			if mt, ok := s.(plugin.ModTagger); ok {
+		if s, ok := plugins.SourceNamed(e.Source); ok {
+			if mt, ok := s.(plugins.ModTagger); ok {
 				dir := e.DataDir
 				known = append(known, func() map[string]string { return mt.ModTags(dir, game) })
 			}
@@ -106,8 +106,8 @@ func (a *App) configExtra(e Entry, c *remote.Client, root string) *configExtra {
 func (x *configExtra) Scan(m *transfer.Manifest) error {
 	g := x.e.Game
 	var owners func(string) map[string]string
-	if l, ok := plugin.DetectLoader(x.e.Profile.Dir); ok {
-		if co, ok := l.(plugin.ConfigOwner); ok {
+	if l, ok := plugins.DetectLoader(x.e.Profile.Dir); ok {
+		if co, ok := l.(plugins.ConfigOwner); ok {
 			owners = co.ConfigOwners
 		}
 	}

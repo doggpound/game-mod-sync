@@ -84,7 +84,7 @@ Settings are in `%APPDATA%\game-mod-sync` (Windows) or `~/.config/game-mod-sync`
 | Servers | any SSH or SFTP server; [CubeCoders AMP](https://cubecoders.com/AMP) |
 | Games | any BepInEx game; Valheim (with world download) |
 
-More can be added as plugins: [plugins/README.md](plugins/README.md).
+More can be added as plugins: [internal/plugins/README.md](internal/plugins/README.md).
 
 ## Development
 

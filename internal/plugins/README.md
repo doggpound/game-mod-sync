@@ -1,8 +1,8 @@
 # Plugins
 
 Everything game-mod-sync knows about a particular mod manager, mod loader, type of server, world
-format or game is a plugin in this folder. The program itself (`internal/`) only talks to them
-through the interfaces in [`internal/plugin`](../internal/plugin/plugin.go).
+format or game is a plugin in this folder. The rest of the program only talks to them through the
+interfaces in [`plugins.go`](plugins.go).
 
 | Folder | Kind | Now |
 |---|---|---|

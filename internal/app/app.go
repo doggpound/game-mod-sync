@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/doggpound/game-mod-sync/internal/configs"
-	"github.com/doggpound/game-mod-sync/internal/games"
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
+	"github.com/doggpound/game-mod-sync/internal/plugins/games"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/secrets"
 	"github.com/doggpound/game-mod-sync/internal/state"
@@ -54,9 +54,9 @@ type App struct {
 
 // Entry is one profile that can be synced.
 type Entry struct {
-	Source  string         // the mod manager's name (plugin.Source)
-	DataDir string         // its data folder the profile is in
-	Profile plugin.Profile // the profile
+	Source  string          // the mod manager's name (plugins.Source)
+	DataDir string          // its data folder the profile is in
+	Profile plugins.Profile // the profile
 	Game    *games.Game
 }
 
@@ -72,7 +72,7 @@ func (a *App) Label(e Entry) string {
 
 // where is a target's game folder as menus show it (the server type's short name).
 func (a *App) where(t state.Target) string {
-	if s, ok := plugin.ServerNamed(t.Backend); ok {
+	if s, ok := plugins.ServerNamed(t.Backend); ok {
 		return s.ShortName(&a.State.Config, t.Root)
 	}
 	return t.Root
@@ -81,7 +81,7 @@ func (a *App) where(t state.Target) string {
 // dataDir finds a mod manager's data folder: the one in the settings, else
 // the one found on this computer (asked once when there are several). ok is
 // false when this mod manager isn't installed.
-func (a *App) dataDir(s plugin.Source) (dir string, ok bool, err error) {
+func (a *App) dataDir(s plugins.Source) (dir string, ok bool, err error) {
 	cfg := &a.State.Config
 	if d := cfg.SourceDirs[s.Name()]; d != "" {
 		if _, err := os.Stat(d); err != nil {
@@ -114,7 +114,7 @@ func (a *App) Entries() ([]Entry, error) {
 	var out []Entry
 	found := false
 	var names []string
-	for _, s := range plugin.Sources() {
+	for _, s := range plugins.Sources() {
 		names = append(names, s.Label())
 		dir, ok, err := a.dataDir(s)
 		if err != nil {
@@ -308,8 +308,8 @@ func (a *App) serverManaged(c *remote.Client, e Entry, t *state.Target) (transfe
 		}
 	}
 	specs := e.Game.Managed[t.Backend]
-	srv, _ := plugin.ServerNamed(t.Backend)
-	mf, ok := srv.(plugin.ManagedFiles)
+	srv, _ := plugins.ServerNamed(t.Backend)
+	mf, ok := srv.(plugins.ManagedFiles)
 	if !ok || len(specs) == 0 {
 		return keep, nil
 	}
@@ -546,7 +546,7 @@ func (a *App) checkForUpdate() {
 }
 
 func sourceLabel(name string) string {
-	if s, ok := plugin.SourceNamed(name); ok {
+	if s, ok := plugins.SourceNamed(name); ok {
 		return s.Label()
 	}
 	return name

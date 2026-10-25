@@ -16,11 +16,11 @@ import (
 
 	"github.com/pkg/sftp"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
 	"github.com/doggpound/game-mod-sync/internal/state"
 )
 
-func init() { plugin.RegisterServer(Server{}) }
+func init() { plugins.RegisterServer(Server{}) }
 
 // Server is the AMP server type.
 type Server struct{}
@@ -43,7 +43,7 @@ func (Server) ShortName(cfg *state.Config, root string) string {
 	return ShortName(root, cfg.AMPInstancesDir)
 }
 
-func (Server) Managed(cfg *state.Config, c *sftp.Client, root string, specs []string) ([]plugin.ManagedFile, error) {
+func (Server) Managed(cfg *state.Config, c *sftp.Client, root string, specs []string) ([]plugins.ManagedFile, error) {
 	return Managed(c, root, cfg.AMPInstancesDir, specs)
 }
 
@@ -79,7 +79,7 @@ func ShortName(root, instancesDir string) string {
 // instance: specs are "setting=pattern[,pattern]" (the game's managed.amp),
 // and a setting counts when the instance's App.AppSettings JSON has it true.
 // Settings files are read over SFTP, so this works on SFTP-only logins too.
-func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]plugin.ManagedFile, error) {
+func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]plugins.ManagedFile, error) {
 	inst, name, ok := Instance(root, instancesDir)
 	if !ok || len(specs) == 0 {
 		return nil, nil
@@ -88,7 +88,7 @@ func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]plugi
 	if err != nil || settings == "" {
 		return nil, err
 	}
-	var out []plugin.ManagedFile
+	var out []plugins.ManagedFile
 	for _, spec := range specs {
 		setting, pats, ok := strings.Cut(spec, "=")
 		if !ok {
@@ -98,7 +98,7 @@ func Managed(c *sftp.Client, root, instancesDir string, specs []string) ([]plugi
 			continue
 		}
 		for _, p := range strings.Split(pats, ",") {
-			out = append(out, plugin.ManagedFile{Pattern: p, Reason: fmt.Sprintf("AMP setting %q is on for %s", setting, name)})
+			out = append(out, plugins.ManagedFile{Pattern: p, Reason: fmt.Sprintf("AMP setting %q is on for %s", setting, name)})
 		}
 	}
 	return out, nil

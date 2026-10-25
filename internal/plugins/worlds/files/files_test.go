@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/doggpound/game-mod-sync/internal/worlds"
+	"github.com/doggpound/game-mod-sync/internal/plugins/worlds"
 )
 
 func names(ws []worlds.World) string {

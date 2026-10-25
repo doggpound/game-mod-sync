@@ -8,31 +8,37 @@ scripts around rsync; their settings are still read, see [Settings](#settings).)
 ## Layout
 
 ```
-main.go                       options, picks the interface, runs the app
-plugins/                      everything particular to a mod manager, mod loader,
-  sources/ loaders/ servers/  server type, world format or game: one folder each,
-  worlds/ games/ all/         registered in plugins/all (see plugins/README.md)
+main.go         options, picks the interface, runs the app
 internal/
-  plugin/       the plugin interfaces and the registry
   app/          the flow: menus' content, setup, sync, configs step, world download, Edit
   ui/           the interface the app talks to; text/ and tui/ implement it
   remote/       SSH connection + SFTP, logins, known_hosts, ~/.ssh/config, finding game folders
   transfer/     compare by content and apply (the rsync replacement), the manifest
   configs/      config comparison, which mod a file is from, client/server tags
-  worlds/       world download's shared part: reading worlds through an FS, Mirror
-  games/        game settings: loader defaults + game files + the user's own files
   state/        config.toml and targets.toml; reading 0.x settings
   secrets/      passwords in the system's credential store
   update/       "a newer release exists"
   testserver/   a real SSH + SFTP server for the tests (and the screenshot demo)
+  plugins/      the plugin interfaces and registry (plugins.go), and the plugins: everything
+    sources/      particular to a mod manager, mod loader, server type, world format or game,
+    loaders/      one folder each, listed in all/ (see README.md there)
+    servers/
+    worlds/       also the shared part of world download: reading worlds through an FS, Mirror
+    games/        the game files, and building a game's settings from them + the user's own
+    all/
 docs/           this page, badges (make.py), screenshots (make.sh, demo/)
 ```
 
-The program never names a plugin: it asks the registry (`internal/plugin`) for the mod managers,
+This is Go's standard layout for a single program ([Organizing a Go
+module](https://go.dev/doc/modules/layout)): `main.go` at the top and everything else in
+`internal/`, which other projects can't import, so none of it is a public API to keep stable.
+
+The program never names a plugin: it asks the registry (`internal/plugins`) for the mod managers,
 loaders, server types and world formats, and each plugin registers itself in an `init` function.
-`plugins/all` imports them all; a test fails if a plugin folder isn't in it. Optional abilities are
+`plugins/all` imports them all; a test fails if a plugin isn't in it. Optional abilities are
 small extra interfaces a plugin implements only if it has them (`ModTagger`, `ConfigOwner`,
-`ManagedFiles`, `SaveFinder`, `Fallback`). How to write one: [plugins/README.md](../plugins/README.md).
+`ManagedFiles`, `SaveFinder`, `Fallback`). How to write one:
+[internal/plugins/README.md](../internal/plugins/README.md).
 
 ## Comparing by content
 

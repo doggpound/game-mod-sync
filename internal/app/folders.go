@@ -1,6 +1,6 @@
 // Package app is game-mod-sync's flow: the main menu, first-time setup, a
 // profile's sync (mods, then config files, one review), world download and
-// the Edit menu. It reaches plugins only through internal/plugin, and the
+// the Edit menu. It reaches plugins only through internal/plugins, and the
 // person only through internal/ui. See docs/DESIGN.md.
 package app
 

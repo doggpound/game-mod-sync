@@ -12,10 +12,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
 )
 
-func init() { plugin.RegisterLoader(Loader{}) }
+func init() { plugins.RegisterLoader(Loader{}) }
 
 // Loader is BepInEx.
 type Loader struct{}
@@ -28,8 +28,8 @@ func (Loader) Detect(dir string) bool {
 	return isDir(filepath.Join(dir, "BepInEx", "core")) || isDir(filepath.Join(dir, "BepInEx", "plugins"))
 }
 
-func (Loader) Layout() plugin.Layout {
-	return plugin.Layout{
+func (Loader) Layout() plugins.Layout {
+	return plugins.Layout{
 		SyncDirs:   []string{"BepInEx/plugins"},
 		Excludes:   []string{"MMHOOK/"},
 		ConfigDirs: []string{"BepInEx/config"},

@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
+	"github.com/doggpound/game-mod-sync/internal/plugins/worlds"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/state"
 	"github.com/doggpound/game-mod-sync/internal/ui"
-	"github.com/doggpound/game-mod-sync/internal/worlds"
 )
 
 // worldTries is how often a world is copied before giving up because the
@@ -34,7 +34,7 @@ func (a *App) Download(e Entry) error {
 		a.UI.Say(g.Name + " has no world download (its game file sets no world format).")
 		return nil
 	}
-	format, err := plugin.WorldFormatNamed(g.Worlds.Format, g.Worlds.Files)
+	format, err := plugins.WorldFormatNamed(g.Worlds.Format, g.Worlds.Files)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (a *App) Download(e Entry) error {
 // fetchWorld copies the world into the cache folder stage. The server may
 // save meanwhile, so its save stamp is read before and after the copy, and
 // the copy is good when both match the copy's own stamp.
-func (a *App) fetchWorld(c *remote.Client, f plugin.WorldFormat, dir, name, stage string) (string, error) {
+func (a *App) fetchWorld(c *remote.Client, f plugins.WorldFormat, dir, name, stage string) (string, error) {
 	srv := worlds.ServerFS{C: c.SFTP()}
 	for try := 1; try <= worldTries; try++ {
 		a.UI.Info("Checking " + name + "'s last save on the server ...")
@@ -202,7 +202,7 @@ func (a *App) fetchWorld(c *remote.Client, f plugin.WorldFormat, dir, name, stag
 // backups/<time>/ and puts the downloaded one in its place; if that fails,
 // the old copy is moved back. Returns the backup folder ("" if there was
 // nothing to back up).
-func installWorld(f plugin.WorldFormat, stage, name, local, backups string, keep int) (string, error) {
+func installWorld(f plugins.WorldFormat, stage, name, local, backups string, keep int) (string, error) {
 	ts := time.Now().Format("20060102-150405")
 	saved := ""
 	var moved []string
@@ -276,8 +276,8 @@ func (a *App) serverWorlds(c *remote.Client, e Entry, t *state.Target) (string, 
 	if t.Worlds != "" {
 		cands = append(cands, t.Worlds)
 	}
-	srv, _ := plugin.ServerNamed(t.Backend)
-	if sf, ok := srv.(plugin.SaveFinder); ok && g.Worlds.Saves[t.Backend] != "" {
+	srv, _ := plugins.ServerNamed(t.Backend)
+	if sf, ok := srv.(plugins.SaveFinder); ok && g.Worlds.Saves[t.Backend] != "" {
 		saves, world := sf.Saves(&a.State.Config, fc, t.Root, g.Worlds.Saves[t.Backend])
 		running = world
 		if saves != "" {

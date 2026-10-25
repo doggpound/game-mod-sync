@@ -1,7 +1,7 @@
 // Package worlds is the shared part of world download: reading worlds on
 // the server (over SFTP) or on this computer through one small FS, and
 // copying a world's files (Mirror). How a game saves a world is a world
-// format plugin (plugins/worlds/).
+// format plugin (the folders below this one).
 package worlds
 
 import (

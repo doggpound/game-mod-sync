@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
 	"github.com/doggpound/game-mod-sync/internal/remote"
 	"github.com/doggpound/game-mod-sync/internal/state"
 	"github.com/doggpound/game-mod-sync/internal/ui"
@@ -24,10 +24,10 @@ func (a *App) Setup(e Entry) (state.Target, *remote.Client, error) {
 	a.UI.Say(fmt.Sprintf("One-time setup for %s / %s", g.Name, p.Name))
 
 	// The server types, the last one used first.
-	types := plugin.Servers()
+	types := plugins.Servers()
 	for i, st := range types {
 		if st.Name() == cfg.LastBackend && i > 0 {
-			types = append(append([]plugin.Server{st}, types[:i]...), types[i+1:]...)
+			types = append(append([]plugins.Server{st}, types[:i]...), types[i+1:]...)
 			break
 		}
 	}
@@ -142,7 +142,7 @@ func (a *App) pickFolder(c *remote.Client, e Entry, t state.Target) (string, err
 		return "", err
 	}
 	start, depth := home, 6
-	if srv, ok := plugin.ServerNamed(t.Backend); ok {
+	if srv, ok := plugins.ServerNamed(t.Backend); ok {
 		start, depth = srv.SearchFrom(&a.State.Config, home, c.CanRun())
 	}
 	a.UI.Info("Looking for " + g.GameMarker + " on the server ...")

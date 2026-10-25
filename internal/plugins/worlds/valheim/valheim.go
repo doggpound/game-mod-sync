@@ -14,12 +14,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/doggpound/game-mod-sync/internal/plugin"
-	"github.com/doggpound/game-mod-sync/internal/worlds"
+	"github.com/doggpound/game-mod-sync/internal/plugins"
+	"github.com/doggpound/game-mod-sync/internal/plugins/worlds"
 )
 
 func init() {
-	plugin.RegisterWorldFormat("valheim", func([]string) (plugin.WorldFormat, error) { return Valheim{}, nil })
+	plugins.RegisterWorldFormat("valheim", func([]string) (plugins.WorldFormat, error) { return Valheim{}, nil })
 }
 
 // Valheim is the format.

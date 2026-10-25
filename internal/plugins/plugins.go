@@ -1,8 +1,8 @@
-// Package plugin is what a plugin implements, and the registry plugins add
-// themselves to. The plugins live in plugins/ (one folder each) and register
-// in an init function; plugins/all imports every one of them, so adding a
-// plugin is a new folder plus one line there. The program only reaches
-// plugins through this package.
+// Package plugins is what a plugin implements, and the registry plugins add
+// themselves to. The plugins live in the folders below this one (one folder
+// each) and register in an init function; all/ imports every one of them, so
+// adding a plugin is a new folder plus one line there. The program only
+// reaches plugins through this package.
 //
 // Kinds:
 //
@@ -14,7 +14,7 @@
 //
 // Optional abilities are separate interfaces a plugin implements only when
 // it has them (e.g. ManagedFiles for a server type that installs mods itself).
-package plugin
+package plugins
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ import (
 
 	"github.com/pkg/sftp"
 
+	"github.com/doggpound/game-mod-sync/internal/plugins/worlds"
 	"github.com/doggpound/game-mod-sync/internal/state"
-	"github.com/doggpound/game-mod-sync/internal/worlds"
 )
 
 // ---------------------------------------------------------------- sources --

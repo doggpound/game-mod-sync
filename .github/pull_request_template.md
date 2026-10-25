@@ -20,5 +20,5 @@
 
 ## Checklist
 
-- [ ] README / `docs/DESIGN.md` / `plugins/README.md` updated if behaviour changed
+- [ ] README / `docs/DESIGN.md` / `internal/plugins/README.md` updated if behaviour changed
 - [ ] No personal or environment details anywhere (hostnames, IPs, user names, server or profile names, URLs of private services) - in code, docs, commit messages or this description
