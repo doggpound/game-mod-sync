@@ -30,7 +30,7 @@ func (Loader) Detect(dir string) bool {
 
 func (Loader) Layout() plugins.Layout {
 	return plugins.Layout{
-		SyncDirs:   []string{"BepInEx/plugins"},
+		SyncDirs:   []string{"BepInEx/plugins", "BepInEx/patchers"},
 		Excludes:   []string{"MMHOOK/"},
 		ConfigDirs: []string{"BepInEx/config"},
 		ConfigSkip: []string{"/BepInEx.cfg", "*.dat"},

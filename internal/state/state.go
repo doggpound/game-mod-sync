@@ -50,7 +50,11 @@ type Config struct {
 	DefaultUI       string            `toml:"default_ui,omitempty"`        // cli or tui
 	LocalWorlds     map[string]string `toml:"local_worlds,omitempty"`      // game id -> local worlds folder
 	UpdateCheck     *bool             `toml:"update_check,omitempty"`      // say when a newer release exists (default yes)
+	Clean           *bool             `toml:"clean,omitempty"`             // remove mods and configs the profile doesn't have from the server (default yes)
 }
+
+// CleanOn reports whether a sync removes what the profile doesn't have (clean, default yes).
+func (c Config) CleanOn() bool { return c.Clean == nil || *c.Clean }
 
 // DefaultConfig is used when there's no settings file.
 func DefaultConfig() Config {

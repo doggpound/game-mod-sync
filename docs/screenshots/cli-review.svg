@@ -15,7 +15,7 @@
 <text x="47.6" y="142" fill="#cccccc" textLength="445.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Reading the server&#x27;s versions of 1 config file(s) ...</text>
 <text x="14.0" y="159" fill="#cccccc" textLength="260.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">3 file(s) to send, 1 to delete.</text>
 <text x="14.0" y="193" fill="#cccccc" font-weight="bold" textLength="151.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">-- Config files --</text>
-<text x="14.0" y="210" fill="#cccccc" textLength="319.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Ticked files are copied to the server.</text>
+<text x="14.0" y="210" fill="#cccccc" textLength="512.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Ticked files are copied to the server (unused ones: removed).</text>
 <text x="14.0" y="227" fill="#cccccc" textLength="327.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Not copied (client mods only): AzuClock</text>
 <text x="98.0" y="244" fill="#cccccc" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">STATUS   SIDE    MOD            FILE</text>
 <text x="39.2" y="261" fill="#cccccc" font-weight="bold" textLength="16.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">1)</text>
@@ -31,7 +31,7 @@
 <text x="39.2" y="414" fill="#cccccc" textLength="226.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">+ new      Azumatt-AzuClock</text>
 <text x="39.2" y="431" fill="#cccccc" textLength="268.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">~ updated  ValheimModding-Jotunn</text>
 <text x="39.2" y="448" fill="#cccccc" textLength="210.0" lengthAdjust="spacingAndGlyphs" xml:space="preserve">- removed  Old-RemovedMod</text>
-<text x="14.0" y="482" fill="#cccccc" textLength="193.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Config files to copy: 1</text>
+<text x="14.0" y="482" fill="#cccccc" textLength="319.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Config files: 1 config file(s) to copy</text>
 <text x="39.2" y="499" fill="#cccccc" textLength="512.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">new      server  ServersideQoL  argusmagnus.ServersideQoL.cfg</text>
 <text x="14.0" y="533" fill="#cccccc" textLength="596.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Replaced and deleted files are kept in .mod-sync-backups on the server.</text>
 <text x="14.0" y="550" fill="#cccccc" textLength="831.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Apply these changes to the server? (3 file(s) to send, 1 to delete, 1 config file(s) to copy) [y/N]</text>

@@ -29,6 +29,7 @@ type FolderSync struct {
 	Dirs        []string // folders to sync, relative to both (e.g. BepInEx/plugins)
 	Excludes    transfer.Excludes
 	KeepBackups int  // backups to keep on the server; 0 = none made
+	NoClean     bool // leave files the profile doesn't have on the server (no deletions)
 	DryRun      bool // show what would change, change nothing
 	Yes         bool // don't ask before applying
 	Verbose     bool // list every file, not just a per-mod summary
@@ -48,6 +49,7 @@ type Extra interface {
 	Preview(yes bool)                                // what would be copied (yes: -y copies only new ones)
 	Choose(yes bool) (bool, error)                   // pick; false = Back
 	Picked() int                                     // how many were picked
+	Describe() string                                // what the picked ones will do, e.g. "2 config file(s) to copy"
 	Review()                                         // one line per picked file
 	Apply(backup string, m *transfer.Manifest) error // backup: this sync's backup folder ("" = none)
 }
@@ -94,6 +96,9 @@ func (f *FolderSync) Run() error {
 			return err
 		}
 		p := transfer.Compare(lt, st, f.Excludes)
+		if f.NoClean {
+			p.Delete, p.RmDirs = nil, nil
+		}
 		if len(f.Dirs) > 1 {
 			f.UI.Say("  " + d + "/")
 		}
@@ -173,7 +178,7 @@ func (f *FolderSync) Run() error {
 		what = append(what, mods)
 	}
 	if picked > 0 {
-		what = append(what, fmt.Sprintf("%d config file(s) to copy", picked))
+		what = append(what, f.Extra.Describe())
 	}
 	if !f.Yes {
 		if f.Title != "" {
@@ -192,10 +197,10 @@ func (f *FolderSync) Run() error {
 		if f.Extra != nil {
 			f.UI.Say("")
 			if picked > 0 {
-				f.UI.Say(fmt.Sprintf("Config files to copy: %d", picked))
+				f.UI.Say("Config files: " + f.Extra.Describe())
 				f.Extra.Review()
 			} else {
-				f.UI.Say("Config files to copy: none")
+				f.UI.Say("Config files: none picked")
 			}
 		}
 		f.UI.Say("")
@@ -236,7 +241,7 @@ func (f *FolderSync) Run() error {
 		if f.KeepBackups > 0 {
 			bk = path.Join(backups, ts)
 		}
-		f.UI.Info(fmt.Sprintf("Copying %d config file(s) ...", picked))
+		f.UI.Info("Config files: " + f.Extra.Describe() + " ...")
 		if err := f.Extra.Apply(bk, manifest); err != nil {
 			return err
 		}
@@ -249,7 +254,7 @@ func (f *FolderSync) Run() error {
 	f.Applied = true
 	f.UI.OK("Synced.")
 	if picked > 0 {
-		f.UI.Say(fmt.Sprintf("Copied %d config file(s).", picked))
+		f.UI.Say("Config files done: " + f.Extra.Describe() + ".")
 	}
 	if f.KeepBackups > 0 {
 		f.UI.Say("Previous files: " + path.Join(backups, ts))
