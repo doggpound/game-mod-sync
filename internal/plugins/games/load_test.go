@@ -32,7 +32,7 @@ func TestValheim(t *testing.T) {
 	if g.Name != "Valheim" || g.Loader != "bepinex" {
 		t.Errorf("name %q loader %q", g.Name, g.Loader)
 	}
-	if !reflect.DeepEqual(g.SyncDirs, []string{"BepInEx/plugins"}) || !reflect.DeepEqual(g.ConfigDirs, []string{"BepInEx/config"}) {
+	if !reflect.DeepEqual(g.SyncDirs, []string{"BepInEx/plugins", "BepInEx/patchers"}) || !reflect.DeepEqual(g.ConfigDirs, []string{"BepInEx/config"}) {
 		t.Errorf("dirs %v %v", g.SyncDirs, g.ConfigDirs)
 	}
 	if !reflect.DeepEqual(g.Excludes, []string{"MMHOOK/", "Valheim.DisplayBepInExInfo.dll"}) {

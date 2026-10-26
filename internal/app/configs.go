@@ -22,9 +22,9 @@ import (
 const configsHelp = `Config files
 
 The mods' config files from your profile, compared with the server's.
-Ticked files are copied to the server when you apply. Nothing is ever
-deleted on the server, and a file that gets replaced is kept in the
-backups (.mod-sync-backups in the game folder).
+Ticked files are copied to the server when you apply (unused ones are
+removed). A file that gets replaced or removed is kept in the backups
+(.mod-sync-backups in the game folder).
 
 STATUS
   new      the server doesn't have this file yet. Ticked, so a mod you
@@ -33,6 +33,10 @@ STATUS
            copying it replaces the server's settings with yours.
            d (text) or opening the row (full screen) shows each setting
            that differs: the server's value, then yours.
+  unused   only on the server, and no mod in your profile (or that
+           the server keeps) uses it. Ticked: removed, so the server
+           only has the configs of the mods it runs. --no-clean (or
+           clean = false in the settings) leaves them alone.
 
 SIDE (from the mod's Thunderstore tags)
   server   runs on the server
@@ -94,13 +98,14 @@ type configExtra struct {
 	header string
 	client []string // client-only mods
 	picked []int
+	keep   transfer.Excludes // what the sync leaves alone in the mod folders
 }
 
-func (a *App) configExtra(e Entry, c *remote.Client, root string) *configExtra {
+func (a *App) configExtra(e Entry, c *remote.Client, root string, keep transfer.Excludes) *configExtra {
 	if len(e.Game.ConfigDirs) == 0 {
 		return nil
 	}
-	return &configExtra{a: a, e: e, c: c, root: root}
+	return &configExtra{a: a, e: e, c: c, root: root, keep: keep}
 }
 
 func (x *configExtra) Scan(m *transfer.Manifest) error {
@@ -116,6 +121,7 @@ func (x *configExtra) Scan(m *transfer.Manifest) error {
 		ConfigDirs: g.ConfigDirs, Skip: transfer.Excludes(g.ConfigSkip), SyncDirs: g.SyncDirs,
 		Owners: owners, Tags: x.a.tags(g.ID), Community: g.Thunderstore,
 		TagClient: g.TagClient, TagServer: g.TagServer, Verbose: x.a.Opts.Verbose,
+		Clean: x.a.clean(), Keep: x.keep,
 		Info: x.a.UI.Info, Warn: x.a.UI.Warn,
 	}
 	res, err := s.Scan(m)
@@ -149,17 +155,18 @@ func (x *configExtra) layout() {
 			x.client = append(x.client, configs.ModName(it.Mod))
 			continue
 		}
-		side := it.Side
-		if side == "" {
+		side, name := it.Side, modLabel(it.Mod)
+		if it.State == "unused" {
+			side, name = "-", "-"
+		} else if side == "" {
 			side = "?"
 		}
-		name := modLabel(it.Mod)
 		if len(name) > 26 {
 			name = name[:26]
 		}
 		x.rows = append(x.rows, fmt.Sprintf("%-8s %-7s %-*s  %s", it.State, side, wm, name, cutStart(it.Path, fmax)))
 		x.idx = append(x.idx, i)
-		x.on = append(x.on, it.State == "new" && it.Mod != "")
+		x.on = append(x.on, (it.State == "new" && it.Mod != "") || it.State == "unused")
 	}
 }
 
@@ -195,7 +202,9 @@ func (x *configExtra) Preview(yes bool) {
 	}
 	u := x.a.UI
 	head := "  Configs"
-	if yes {
+	if yes && x.a.clean() {
+		head += " (new ones are copied, unused ones removed)"
+	} else if yes {
 		head += " (new ones are copied)"
 	}
 	u.Say("")
@@ -208,7 +217,9 @@ func (x *configExtra) Preview(yes bool) {
 	}
 	for i, r := range x.rows {
 		mark := "~"
-		if x.on[i] {
+		if x.res.Items[x.idx[i]].State == "unused" {
+			mark = "-"
+		} else if x.on[i] {
 			mark = "+"
 		}
 		u.Say("   " + mark + " " + r)
@@ -254,6 +265,9 @@ func (x *configExtra) Choose(yes bool) (bool, error) {
 		return true, nil
 	}
 	q := "Ticked files are copied to the server."
+	if x.a.clean() {
+		q = "Ticked files are copied to the server (unused ones: removed)."
+	}
 	for _, n := range x.notes() {
 		q += "\n" + n
 	}
@@ -278,6 +292,24 @@ func (x *configExtra) Choose(yes bool) (bool, error) {
 }
 
 func (x *configExtra) Picked() int { return len(x.picked) }
+
+// Describe is what the picked files will do: "2 config file(s) to copy, 5 to remove".
+func (x *configExtra) Describe() string {
+	rm := 0
+	for _, p := range x.picked {
+		if x.res.Items[p].State == "unused" {
+			rm++
+		}
+	}
+	switch cp := len(x.picked) - rm; {
+	case rm == 0:
+		return fmt.Sprintf("%d config file(s) to copy", cp)
+	case cp == 0:
+		return fmt.Sprintf("%d unused config file(s) to remove", rm)
+	default:
+		return fmt.Sprintf("%d config file(s) to copy, %d unused to remove", cp, rm)
+	}
+}
 
 func (x *configExtra) Review() {
 	for _, p := range x.picked {

@@ -62,9 +62,10 @@ compared by **SHA-256 of their contents**:
 
 - Every run shows what will change and asks before changing anything (`-y` doesn't ask; `-n`
   changes nothing).
-- Only folders the mod manager fully owns are mirrored (`SyncDirs`, with deletions). Config
-  folders are never mirrored: files are offered one by one and nothing is deleted there, because
-  servers often have their own settings on purpose.
+- Only folders the mod manager fully owns are mirrored (`SyncDirs`, for BepInEx `plugins` and
+  `patchers`, with deletions). Config folders are never mirrored: files are offered one by one,
+  because servers often have their own settings on purpose; only config files no mod on the server
+  uses are removed (see [Cleaning up](#cleaning-up)).
 - A sync folder that's empty in the profile is skipped, and if nothing is left the run is refused:
   syncing it would wipe the server's mods.
 - Replaced or deleted files are first **moved** (a rename on the same disk, instant) to
@@ -74,6 +75,23 @@ compared by **SHA-256 of their contents**:
   dropped connection never leaves half a file. Permissions 644 / 755.
 - A question that gets no answer because the input ended (scripts) takes its default, which is
   always the safe one (don't apply; leave a server-installed file alone).
+
+## Cleaning up
+
+A sync removes what the profile doesn't have, so the server runs exactly the profile's mods: an old
+mod or a config file nobody reads can still slow a server down or break it, and is hard to find by
+hand. On by default; `--no-clean` (one run) or `clean = false` (settings) turns it off, and then
+nothing on the server is deleted.
+
+- **Mods and patchers**: the sync folders are mirrored, so mods that aren't in the profile are
+  removed (except excluded and server-managed files).
+- **Config files**: a file only on the server whose owner (see [Config files](#config-files)) is
+  none of the profile's mods, nor a mod the sync leaves on the server (a server-managed
+  `ValheimPlus.dll` keeps `valheim_plus.cfg`), is *unused*: listed in the checklist, ticked, and
+  removed. A folder left empty by that goes too. `BepInEx.cfg` and the game file's `config_skip`
+  are never touched.
+
+Everything removed goes to the backups first, like any replaced file.
 
 ## Server-managed files
 
@@ -89,7 +107,7 @@ anchored to the top of the sync folder, so a copy inside a mod's own folder stil
 ## Config files
 
 Each config folder is compared like the mods; files that are new or differ are offered in a
-checklist, never deleted. To show what differs, the server's copies of differing files are read
+checklist (and unused ones, see [Cleaning up](#cleaning-up)). To show what differs, the server's copies of differing files are read
 over SFTP: `.cfg` files are compared per `[Section] Key = value` (`Lock Configuration: Off -> On`),
 other files as a line diff (a small longest-common-subsequence diff). Files that differ only in
 comments, blank lines, spacing or line endings are dropped, as are files from mods no longer in
@@ -106,7 +124,8 @@ the profile (`-v` shows them).
   cached with no tags), then mod managers that know them offline (`ModTagger`: Gale's
   `thunderstore_cache.json`), then Thunderstore (6 at a time, 10 s each; a network error caches
   nothing). Client-only mods' files are listed but never copied.
-- **Defaults**: new files ticked (if their mod is known), differing ones not; `-y` copies new ones.
+- **Defaults**: new files ticked (if their mod is known), differing ones not, unused ones ticked;
+  `-y` copies new ones and removes unused ones.
 
 The mod changes and the picked config files are reviewed together and applied with one backup time.
 

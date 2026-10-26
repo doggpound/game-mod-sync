@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/doggpound/game-mod-sync/internal/configs"
+	"github.com/doggpound/game-mod-sync/internal/state"
 )
 
 // fakeDLL writes a file holding a [BepInPlugin] attribute blob (01 00, then
@@ -89,13 +90,13 @@ func TestConfigsWithYCopyOnlyNewOnes(t *testing.T) {
 		}
 	}
 	for _, want := range []string{
-		"Configs (new ones are copied)",
+		"Configs (new ones are copied, unused ones removed)",
 		"Not copied (client mods only): ClientMod",
 		"Not shown: 1 file(s) from mods that aren't in this profile",
 		"On: false -> true",
 		"2 lines differ", // the .yml, summed up: its line, then yours (-v or d shows them)
 		"Mods are in sync.",
-		"Copied 1 config file(s).",
+		"Config files done: 1 config file(s) to copy.",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
@@ -123,7 +124,7 @@ func TestConfigsTickADifferingOne(t *testing.T) {
 	if m, _ := filepath.Glob(bk); len(m) != 1 || read(t, m[0]) != "[General]\nOn = false\nRange = 20\n" {
 		t.Errorf("no backup of the replaced config: %v", m)
 	}
-	for _, want := range []string{"-- Config files --", "STATUS   SIDE", "Config files to copy: 2", "2 config file(s) to copy"} {
+	for _, want := range []string{"-- Config files --", "STATUS   SIDE", "Config files: 2 config file(s) to copy", "(2 config file(s) to copy)"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
@@ -173,8 +174,66 @@ func TestConfigsInSyncIsAlreadyInSync(t *testing.T) {
 		t.Fatal(err)
 	}
 	os.Remove(filepath.Join(lc, "Old.RemovedMod.cfg"))
-	out, err := s.run(t, "", "-p", "MyProfile")
+	// The server's Old.RemovedMod.cfg is unused, but --no-clean leaves it alone.
+	out, err := s.run(t, "", "-p", "MyProfile", "--no-clean")
 	if err != nil || !strings.Contains(out, "Already in sync") {
 		t.Errorf("%v\n%s", err, out)
+	}
+}
+
+// cleanCase: the server also has configs no mod there uses (one in its own
+// folder), one for a mod the server keeps (ValheimPlus), and one for a mod in
+// the profile that the profile has no config for yet.
+func cleanCase(t *testing.T) (*appSetup, string) {
+	s, _, sc := configCase(t)
+	write(t, filepath.Join(sc, "Gone.OtherMod.cfg"), "[A]\nB = 1\n")
+	write(t, filepath.Join(sc, "Gone.Mod", "data.yml"), "x: 1\n")
+	write(t, filepath.Join(sc, "valheim_plus.cfg"), "[A]\nB = 1\n")
+	write(t, filepath.Join(sc, "Azumatt.AzuClock.Server.cfg"), "[A]\nB = 1\n")
+	write(t, filepath.Join(s.root, "BepInEx", "plugins", "ValheimPlus.dll"), "dll")
+	s.settings(t, func(st *state.State) {
+		tg, _ := st.Target("gale", "valheim", "MyProfile")
+		tg.Kept = []string{"+ValheimPlus.dll"} // the server installs it: left alone
+		st.SetTarget(tg)
+	})
+	return s, sc
+}
+
+func TestConfigsCleanRemovesUnused(t *testing.T) {
+	s, sc := cleanCase(t)
+	out, err := s.run(t, "", "-p", "MyProfile", "-y")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	for _, f := range []string{"Gone.OtherMod.cfg", "Gone.Mod/data.yml", "Gone.Mod"} {
+		if exists(filepath.Join(sc, filepath.FromSlash(f))) {
+			t.Errorf("unused %s is still on the server:\n%s", f, out)
+		}
+	}
+	for _, f := range []string{"valheim_plus.cfg", "Azumatt.AzuClock.Server.cfg", "argusmagnus.QoL.cfg"} {
+		if !exists(filepath.Join(sc, f)) {
+			t.Errorf("%s was removed, but a mod on the server uses it:\n%s", f, out)
+		}
+	}
+	bk := filepath.Join(s.root, BackupsDir, "*", "BepInEx", "config", "Gone.OtherMod.cfg")
+	if m, _ := filepath.Glob(bk); len(m) != 1 {
+		t.Errorf("no backup of the removed config: %v", m)
+	}
+	for _, want := range []string{"- unused", "1 config file(s) to copy, 2 unused to remove"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestConfigsNoCleanKeepsUnused(t *testing.T) {
+	s, sc := cleanCase(t)
+	s.settings(t, func(st *state.State) { st.Config.Clean = new(bool) }) // clean = false
+	out, err := s.run(t, "", "-p", "MyProfile", "-y")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(sc, "Gone.OtherMod.cfg")) || strings.Contains(out, "unused") {
+		t.Errorf("clean = false, but unused configs were offered or removed:\n%s", out)
 	}
 }

@@ -53,8 +53,9 @@ and it finds the game folder. Passwords can be saved in your system's password s
 agents and `~/.ssh/config` work too.
 
 A sync compares mods by content, offers the config files that are new or differ (with the settings
-that differ), then asks before applying. Replaced files are kept in `.mod-sync-backups` on the
-server.
+that differ), then asks before applying. It also removes mods and config files your profile doesn't
+have, so the server runs exactly your mods. Replaced and removed files are kept in
+`.mod-sync-backups` on the server.
 
 Keys: **Enter** sync, **E** edit, **D** download a world, **?** help, **Esc** back.
 
@@ -67,6 +68,7 @@ Keys: **Enter** sync, **E** edit, **D** download a world, **?** help, **Esc** ba
 | `-y` | No questions (only new config files are copied) |
 | `-n` | Dry run |
 | `-v` | List every file and difference |
+| `--no-clean` | Leave mods and config files your profile doesn't have on the server (`clean = false` in the settings: always) |
 | `--setup` | Set up a profile's server again |
 | `--download-world` | Download the server's world (`--world NAME` for another) |
 | `--refresh-tags` | Look the mods' client/server tags up again |

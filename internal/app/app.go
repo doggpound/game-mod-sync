@@ -29,6 +29,7 @@ type Options struct {
 	DryRun   bool   // -n
 	Yes      bool   // -y
 	Verbose  bool   // -v
+	NoClean  bool   // --no-clean: leave mods and configs the profile doesn't have on the server
 	Setup    bool   // --setup
 	Download bool   // --download-world: download a world instead of syncing
 	World    string // --world NAME: the world to download
@@ -276,11 +277,11 @@ func (a *App) Sync(e Entry) error {
 	ex := append(append(append(transfer.Excludes{}, g.Excludes...), a.State.Config.ExtraExcludes...), keep...)
 	fs := &FolderSync{
 		Client: c, Local: p.Dir, Root: t.Root, Dirs: g.SyncDirs, Excludes: ex,
-		KeepBackups: a.State.Config.KeepBackups,
-		DryRun:      a.Opts.DryRun, Yes: a.Opts.Yes, Verbose: a.Opts.Verbose, UI: a.UI,
+		KeepBackups: a.State.Config.KeepBackups, NoClean: !a.clean(),
+		DryRun: a.Opts.DryRun, Yes: a.Opts.Yes, Verbose: a.Opts.Verbose, UI: a.UI,
 		Title: fmt.Sprintf("%s / %s  →  %s on %s", g.Name, p.Name, a.where(t), t.Host),
 	}
-	if x := a.configExtra(e, c, t.Root); x != nil {
+	if x := a.configExtra(e, c, t.Root, ex); x != nil {
 		fs.Extra = x
 	}
 	err = fs.Run()
@@ -437,6 +438,7 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 	fs.BoolVar(&o.Yes, "y", false, "don't ask for confirmation")
 	fs.BoolVar(&o.Yes, "yes", false, "same as -y")
 	fs.BoolVar(&o.Verbose, "v", false, "list every file, not just a per-mod summary")
+	fs.BoolVar(&o.NoClean, "no-clean", false, "leave mods and config files the profile doesn't have on the server (default: removed, with backups)")
 	fs.BoolVar(&o.Setup, "setup", false, "(re)pick the server folder for the chosen profile")
 	fs.BoolVar(&o.Download, "download-world", false, "copy a world from the profile's server into this computer's saves (with -p)")
 	fs.Func("world", "the world to download (`NAME`; default: the one the server runs)", func(v string) error {
@@ -529,6 +531,10 @@ func Run(args []string, in io.Reader, out io.Writer, version string) error {
 	}
 	return a.Main()
 }
+
+// clean reports whether a sync removes the mods and config files the profile
+// doesn't have from the server (clean in the settings, default yes; --no-clean).
+func (a *App) clean() bool { return a.State.Config.CleanOn() && !a.Opts.NoClean }
 
 // checkForUpdate says when a newer release exists (at most one lookup a day;
 // update_check = false turns it off).

@@ -66,6 +66,19 @@ func (s *appSetup) run(t *testing.T, answers string, args ...string) (string, er
 	return out.String(), err
 }
 
+// settings changes the saved settings.
+func (s *appSetup) settings(t *testing.T, change func(*state.State)) {
+	t.Helper()
+	st, err := state.Load(s.cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	change(st)
+	if err := st.Save(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func parse(t *testing.T, args []string) Options {
 	var o Options
 	for i := 0; i < len(args); i++ {
@@ -77,6 +90,8 @@ func parse(t *testing.T, args []string) Options {
 			o.Yes = true
 		case "-n":
 			o.DryRun = true
+		case "--no-clean":
+			o.NoClean = true
 		case "--download-world":
 			o.Download = true
 		case "--world":
@@ -103,6 +118,32 @@ func TestSyncOneProfile(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
+	}
+}
+
+func TestSyncCleansPatchers(t *testing.T) {
+	s := newAppSetup(t)
+	write(t, filepath.Join(s.pdir, "BepInEx", "patchers", "BepInEx.MonoMod.HookGenPatcher", "p.dll"), "hook")
+	write(t, filepath.Join(s.root, "BepInEx", "patchers", "Old-Patcher", "old.dll"), "old")
+	out, err := s.run(t, "", "-p", "MyProfile", "-y")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(s.root, "BepInEx", "patchers", "BepInEx.MonoMod.HookGenPatcher", "p.dll")) ||
+		exists(filepath.Join(s.root, "BepInEx", "patchers", "Old-Patcher")) {
+		t.Errorf("patchers not synced:\n%s", out)
+	}
+}
+
+func TestSyncNoCleanKeepsOldMods(t *testing.T) {
+	s := newAppSetup(t)
+	out, err := s.run(t, "", "-p", "MyProfile", "-y", "--no-clean")
+	if err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if !exists(filepath.Join(s.root, "BepInEx", "plugins", "Azumatt-AzuClock", "AzuClock.dll")) ||
+		!exists(filepath.Join(s.root, "BepInEx", "plugins", "Old", "Old.dll")) || strings.Contains(out, "removed") {
+		t.Errorf("--no-clean: the new mod should be sent and the old one left alone:\n%s", out)
 	}
 }
 

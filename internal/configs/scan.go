@@ -14,11 +14,11 @@ import (
 	"github.com/doggpound/game-mod-sync/internal/transfer"
 )
 
-// Item is one config file that's new or differs.
+// Item is one config file that's new, differs, or is unused.
 type Item struct {
 	Dir    string   // config folder, e.g. BepInEx/config
 	Path   string   // inside it, e.g. Azumatt.FastLink.cfg
-	State  string   // "new" (not on the server) or "differs"
+	State  string   // "new" (not on the server), "differs", or "unused" (only on the server, no mod there uses it)
 	Mod    string   // mod folder it belongs to; "" = unknown
 	Side   string   // client, server, both, or "" (unknown)
 	Detail []string // differs: the settings that differ (short)
@@ -39,8 +39,13 @@ type Scanner struct {
 	TagClient  string // regex for the client-side category
 	TagServer  string
 	Verbose    bool // also list files of mods that aren't in the profile
-	Info       func(string)
-	Warn       func(string)
+	// Clean also finds the server's config files that no mod left on the
+	// server uses: not in the profile, and from none of the profile's mods
+	// or of the server's mods that the sync leaves alone (Keep).
+	Clean bool
+	Keep  transfer.Excludes // the sync's excludes: what it leaves alone in SyncDirs
+	Info  func(string)
+	Warn  func(string)
 }
 
 // Result is a scan: the items, and what's needed to copy them.
@@ -65,7 +70,7 @@ func (r *Result) Offered() int {
 // Scan compares every config folder. m is the server's manifest (may be nil).
 func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 	r := &Result{local: map[string]transfer.Tree{}, server: map[string]transfer.Tree{}}
-	var items []Item
+	var items, unused []Item
 	for _, cdir := range s.ConfigDirs {
 		local := filepath.Join(s.Local, filepath.FromSlash(cdir))
 		if fi, err := os.Stat(local); err != nil || !fi.IsDir() {
@@ -82,6 +87,13 @@ func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 			continue
 		}
 		r.local[cdir], r.server[cdir] = lt, st
+		if s.Clean {
+			for rel, sv := range st {
+				if _, mine := lt[rel]; !mine && !sv.Dir && !s.Skip.Match(rel, false) {
+					unused = append(unused, Item{Dir: cdir, Path: rel, State: "unused"})
+				}
+			}
+		}
 		var found []Item
 		for rel, l := range lt {
 			if l.Dir || s.Skip.Match(rel, false) {
@@ -138,7 +150,7 @@ func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 			continue
 		}
 		for _, e := range entries {
-			mods = append(mods, e.Name())
+			mods = append(mods, modName(e.Name(), e.IsDir()))
 		}
 		if s.Owners != nil {
 			for id, mod := range s.Owners(dir) {
@@ -146,8 +158,22 @@ func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 			}
 		}
 	}
+	if len(unused) > 0 {
+		// The server's mods that the sync leaves alone keep their configs.
+		for _, d := range s.SyncDirs {
+			entries, err := s.Client.SFTP().ReadDir(path.Join(s.Root, d))
+			if err != nil {
+				continue
+			}
+			for _, e := range entries {
+				if s.Keep.Match(e.Name(), e.IsDir()) {
+					mods = append(mods, modName(e.Name(), e.IsDir()))
+				}
+			}
+		}
+	}
 	var files []string
-	for _, it := range items {
+	for _, it := range append(items, unused...) {
 		files = append(files, it.Path)
 	}
 	owners := Owners(files, mods, ids)
@@ -177,11 +203,17 @@ func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 		it.Side = sides[it.Mod]
 		r.Items = append(r.Items, it)
 	}
-	// New ones first, then by mod and file.
+	for _, it := range unused {
+		if owners[it.Path] == "" {
+			r.Items = append(r.Items, it)
+		}
+	}
+	// New ones first, then differing, then unused; by mod and file.
+	order := map[string]int{"new": 0, "differs": 1, "unused": 2}
 	sort.SliceStable(r.Items, func(i, j int) bool {
 		a, b := r.Items[i], r.Items[j]
 		if a.State != b.State {
-			return a.State == "new"
+			return order[a.State] < order[b.State]
 		}
 		if ma, mb := strings.ToLower(a.Mod), strings.ToLower(b.Mod); ma != mb {
 			return ma < mb
@@ -189,6 +221,15 @@ func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 		return strings.ToLower(a.Path) < strings.ToLower(b.Path)
 	})
 	return r, nil
+}
+
+// modName is a mod's name from its entry in a mod folder: a folder's name, or
+// a file's without its extension (ValheimPlus.dll -> ValheimPlus).
+func modName(name string, dir bool) string {
+	if dir {
+		return name
+	}
+	return strings.TrimSuffix(name, path.Ext(name))
 }
 
 func (s *Scanner) readServer(p string) (string, error) {
@@ -213,9 +254,10 @@ func (s *Scanner) warn(msg string) {
 	}
 }
 
-// Copy copies the picked items (indexes into Items) to the server. Replaced
-// files go to backup/<config folder>/... like the mods ("" = no backups);
-// nothing is ever deleted.
+// Copy copies the picked items (indexes into Items) to the server, and
+// removes the picked unused ones (and folders left empty by that). Replaced
+// and removed files go to backup/<config folder>/... like the mods ("" = no
+// backups).
 func (r *Result) Copy(c *remote.Client, local, root, backup string, picked []int, m *transfer.Manifest) error {
 	byDir := map[string][]Item{}
 	var dirs []string
@@ -230,7 +272,13 @@ func (r *Result) Copy(c *remote.Client, local, root, backup string, picked []int
 		st := r.server[cdir]
 		p := transfer.Plan{New: map[string]bool{}}
 		need := map[string]bool{}
+		gone := map[string]bool{}
 		for _, it := range byDir[cdir] {
+			if it.State == "unused" {
+				p.Delete = append(p.Delete, it.Path)
+				gone[it.Path] = true
+				continue
+			}
 			p.Send = append(p.Send, it.Path)
 			p.Bytes += r.local[cdir][it.Path].Size
 			if it.State == "new" {
@@ -250,6 +298,8 @@ func (r *Result) Copy(c *remote.Client, local, root, backup string, picked []int
 				(strings.Count(p.MkDirs[i], "/") == strings.Count(p.MkDirs[j], "/") && p.MkDirs[i] < p.MkDirs[j])
 		})
 		sort.Strings(p.Send)
+		sort.Strings(p.Delete)
+		p.RmDirs = emptied(st, r.local[cdir], gone)
 		a := &transfer.Apply{
 			SFTP:     c.SFTP(),
 			Local:    filepath.Join(local, filepath.FromSlash(cdir)),
@@ -265,4 +315,35 @@ func (r *Result) Copy(c *remote.Client, local, root, backup string, picked []int
 		}
 	}
 	return nil
+}
+
+// emptied lists the server's folders (not in the profile) that hold nothing
+// but removed files, deepest first.
+func emptied(server, local transfer.Tree, gone map[string]bool) []string {
+	if len(gone) == 0 {
+		return nil
+	}
+	var out []string
+	for d, e := range server {
+		if _, mine := local[d]; !e.Dir || mine {
+			continue
+		}
+		empty, prefix := true, d+"/"
+		for p, f := range server {
+			if strings.HasPrefix(p, prefix) && !f.Dir && !gone[p] {
+				empty = false
+				break
+			}
+		}
+		if empty {
+			out = append(out, d)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if a, b := strings.Count(out[i], "/"), strings.Count(out[j], "/"); a != b {
+			return a > b
+		}
+		return out[i] < out[j]
+	})
+	return out
 }
