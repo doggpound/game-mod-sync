@@ -15,7 +15,7 @@
 <text x="47.6" y="142" fill="#cccccc" textLength="445.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Reading the server&#x27;s versions of 1 config file(s) ...</text>
 <text x="14.0" y="159" fill="#cccccc" textLength="260.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">3 file(s) to send, 1 to delete.</text>
 <text x="14.0" y="193" fill="#cccccc" font-weight="bold" textLength="151.2" lengthAdjust="spacingAndGlyphs" xml:space="preserve">-- Config files --</text>
-<text x="14.0" y="210" fill="#cccccc" textLength="512.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Ticked files are copied to the server (unused ones: removed).</text>
+<text x="14.0" y="210" fill="#cccccc" textLength="789.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Ticked files are copied to the server (unused ones: removed from the server or this computer).</text>
 <text x="14.0" y="227" fill="#cccccc" textLength="327.6" lengthAdjust="spacingAndGlyphs" xml:space="preserve">Not copied (client mods only): AzuClock</text>
 <text x="98.0" y="244" fill="#cccccc" textLength="302.4" lengthAdjust="spacingAndGlyphs" xml:space="preserve">STATUS   SIDE    MOD            FILE</text>
 <text x="39.2" y="261" fill="#cccccc" font-weight="bold" textLength="16.8" lengthAdjust="spacingAndGlyphs" xml:space="preserve">1)</text>

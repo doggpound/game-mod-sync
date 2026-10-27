@@ -92,6 +92,9 @@ nothing on the server is deleted.
   unused: listed, ticked and removed. Other files (`alias.yaml`) may be read by a mod under any
   name: listed as `unused?`, not ticked. A folder left empty goes too. `BepInEx.cfg` and the game
   file's `config_skip` are never touched.
+- **This computer's profile** is checked the same way, and its unused files are listed with SIDE
+  `client` (the server's: `server`). They're moved to `backups/<game>/<profile>/<time>/` in the
+  settings folder (always; the newest `keep_backups`, at least one, are kept).
 
 Everything removed goes to the backups first, like any replaced file.
 

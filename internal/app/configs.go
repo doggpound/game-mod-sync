@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"golang.org/x/term"
 
@@ -23,8 +25,9 @@ const configsHelp = `Config files
 
 The mods' config files from your profile, compared with the server's.
 Ticked files are copied to the server when you apply (unused ones are
-removed). A file that gets replaced or removed is kept in the backups
-(.mod-sync-backups in the game folder).
+removed from where they are). A file that gets replaced or removed is kept
+in the backups: .mod-sync-backups in the game folder on the server, and
+backups/ in game-mod-sync's settings folder on this computer.
 
 STATUS
   new      the server doesn't have this file yet. Ticked, so a mod you
@@ -33,11 +36,12 @@ STATUS
            copying it replaces the server's settings with yours.
            d (text) or opening the row (full screen) shows each setting
            that differs: the server's value, then yours.
-  unused   on the server, and no mod in your profile (or that the
-           server keeps) uses it: a config file named after a mod that's
-           gone. Ticked: removed, so the server only has the configs of
-           the mods it runs. --no-clean (or clean = false in the
-           settings) leaves them alone.
+  unused   no mod in your profile (or that the server keeps) uses it: a
+           config file named after a mod that's gone. SIDE says where it
+           is: server, or client (your profile on this computer - mod
+           managers keep a removed mod's configs). Ticked: removed, so
+           only the configs of the mods you run are left. --no-clean (or
+           clean = false in the settings) leaves them alone.
   unused?  no mod's name matches it, but it isn't a mod's own .cfg
            (e.g. alias.yaml), so a mod may still read it. Not ticked:
            tick it if you know it's left over.
@@ -161,7 +165,7 @@ func (x *configExtra) layout() {
 		}
 		state, side, name := it.State, it.Side, modLabel(it.Mod)
 		if it.State == "unused" {
-			side, name = "-", "-"
+			side, name = it.Where, "-" // where the file is
 			if !it.Sure {
 				state = "unused?"
 			}
@@ -275,7 +279,7 @@ func (x *configExtra) Choose(yes bool) (bool, error) {
 	}
 	q := "Ticked files are copied to the server."
 	if x.a.clean() {
-		q = "Ticked files are copied to the server (unused ones: removed)."
+		q = "Ticked files are copied to the server (unused ones: removed from the server or this computer)."
 	}
 	for _, n := range x.notes() {
 		q += "\n" + n
@@ -302,22 +306,40 @@ func (x *configExtra) Choose(yes bool) (bool, error) {
 
 func (x *configExtra) Picked() int { return len(x.picked) }
 
-// Describe is what the picked files will do: "2 config file(s) to copy, 5 to remove".
+// Describe is what the picked files will do: "2 config file(s) to copy, 5
+// unused to remove (3 on the server, 2 on this computer)".
 func (x *configExtra) Describe() string {
-	rm := 0
+	srv, pc := 0, 0
 	for _, p := range x.picked {
-		if x.res.Items[p].State == "unused" {
-			rm++
+		if it := x.res.Items[p]; it.State == "unused" && it.Where == "client" {
+			pc++
+		} else if it.State == "unused" {
+			srv++
 		}
 	}
-	switch cp := len(x.picked) - rm; {
-	case rm == 0:
+	cp, rm := len(x.picked)-srv-pc, ""
+	switch {
+	case srv > 0 && pc > 0:
+		rm = fmt.Sprintf("%d unused to remove (%d on the server, %d on this computer)", srv+pc, srv, pc)
+	case srv > 0:
+		rm = fmt.Sprintf("%d unused to remove on the server", srv)
+	case pc > 0:
+		rm = fmt.Sprintf("%d unused to remove on this computer", pc)
+	}
+	switch {
+	case rm == "":
 		return fmt.Sprintf("%d config file(s) to copy", cp)
 	case cp == 0:
-		return fmt.Sprintf("%d unused config file(s) to remove", rm)
+		return "config files: " + rm
 	default:
-		return fmt.Sprintf("%d config file(s) to copy, %d unused to remove", cp, rm)
+		return fmt.Sprintf("%d config file(s) to copy, %s", cp, rm)
 	}
+}
+
+// localBackups is where files removed from the profile go: backups/<game>/<profile>
+// in the settings folder.
+func (x *configExtra) localBackups() string {
+	return filepath.Join(x.a.State.Dir, "backups", x.e.Profile.Game, x.e.Profile.Name)
 }
 
 func (x *configExtra) Review() {
@@ -331,7 +353,43 @@ func (x *configExtra) Review() {
 }
 
 func (x *configExtra) Apply(backup string, m *transfer.Manifest) error {
-	return x.res.Copy(x.c, x.e.Profile.Dir, x.root, backup, x.picked, m)
+	if err := x.res.Copy(x.c, x.e.Profile.Dir, x.root, backup, x.picked, m); err != nil {
+		return err
+	}
+	// This computer's unused files: always backed up (same time as the server's).
+	ts := time.Now().Format("20060102-150405")
+	if backup != "" {
+		ts = path.Base(backup)
+	}
+	dir := filepath.Join(x.localBackups(), ts)
+	n, err := x.res.RemoveLocal(x.e.Profile.Dir, dir, x.picked)
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		x.a.UI.Say(fmt.Sprintf("Removed %d unused config file(s) from this computer; kept in %s", n, dir))
+		pruneLocal(x.localBackups(), max(x.a.State.Config.KeepBackups, 1))
+	}
+	return nil
+}
+
+// pruneLocal keeps the newest keep backups in dir (named by time, so newest last).
+func pruneLocal(dir string, keep int) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() {
+			names = append(names, e.Name())
+		}
+	}
+	sort.Strings(names)
+	for len(names) > keep {
+		_ = os.RemoveAll(filepath.Join(dir, names[0]))
+		names = names[1:]
+	}
 }
 
 // RefreshTags looks up every mod of every listed profile on Thunderstore

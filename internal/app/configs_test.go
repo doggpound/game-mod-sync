@@ -92,11 +92,11 @@ func TestConfigsWithYCopyOnlyNewOnes(t *testing.T) {
 	for _, want := range []string{
 		"Configs (new ones are copied, unused ones removed)",
 		"Not copied (client mods only): ClientMod",
-		"Not shown: 1 file(s) from mods that aren't in this profile",
+		"- unused   client  -         Old.RemovedMod.cfg", // the profile's left-over, removed with -y
 		"On: false -> true",
 		"2 lines differ", // the .yml, summed up: its line, then yours (-v or d shows them)
 		"Mods are in sync.",
-		"Config files done: 1 config file(s) to copy.",
+		"Config files done: 1 config file(s) to copy, 1 unused to remove on this computer.",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
@@ -124,7 +124,7 @@ func TestConfigsTickADifferingOne(t *testing.T) {
 	if m, _ := filepath.Glob(bk); len(m) != 1 || read(t, m[0]) != "[General]\nOn = false\nRange = 20\n" {
 		t.Errorf("no backup of the replaced config: %v", m)
 	}
-	for _, want := range []string{"-- Config files --", "STATUS   SIDE", "Config files: 2 config file(s) to copy", "(2 config file(s) to copy)"} {
+	for _, want := range []string{"-- Config files --", "STATUS   SIDE", "Config files: 2 config file(s) to copy, 1 unused to remove on this computer"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
@@ -203,6 +203,8 @@ func cleanCase(t *testing.T) (*appSetup, string) {
 
 func TestConfigsCleanRemovesUnused(t *testing.T) {
 	s, sc := cleanCase(t)
+	lc := filepath.Join(s.pdir, "BepInEx", "config")
+	write(t, filepath.Join(lc, "valheim_plus.cfg"), "[A]\nB = 2\n") // your settings for the server's ValheimPlus
 	out, err := s.run(t, "", "-p", "MyProfile", "-y")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
@@ -211,6 +213,18 @@ func TestConfigsCleanRemovesUnused(t *testing.T) {
 		if exists(filepath.Join(sc, filepath.FromSlash(f))) {
 			t.Errorf("unused %s is still on the server:\n%s", f, out)
 		}
+	}
+	// This computer: the profile's unused ones are moved to the backups.
+	for _, f := range []string{"Gone.Kept.cfg", "Old.RemovedMod.cfg"} {
+		if exists(filepath.Join(lc, f)) {
+			t.Errorf("unused %s is still in the profile:\n%s", f, out)
+		}
+		if m, _ := filepath.Glob(filepath.Join(s.cfg, "backups", "valheim", "MyProfile", "*", "BepInEx", "config", f)); len(m) != 1 {
+			t.Errorf("no backup of %s on this computer", f)
+		}
+	}
+	if !exists(filepath.Join(lc, "valheim_plus.cfg")) || !exists(filepath.Join(lc, "argusmagnus.QoL.cfg")) {
+		t.Errorf("a used config was removed from the profile:\n%s", out)
 	}
 	// Not a .cfg: maybe read by a mod under another name, so only listed.
 	for _, f := range []string{"valheim_plus.cfg", "Azumatt.AzuClock.Server.cfg", "argusmagnus.QoL.cfg", "Gone.Mod/data.yml"} {
@@ -222,8 +236,10 @@ func TestConfigsCleanRemovesUnused(t *testing.T) {
 	if m, _ := filepath.Glob(bk); len(m) != 1 {
 		t.Errorf("no backup of the removed config: %v", m)
 	}
-	for _, want := range []string{"- unused   -       -         Gone.Kept.cfg", "? unused?  -       -         Gone.Mod/data.yml", "1 config file(s) to copy, 2 unused to remove"} {
-		if !strings.Contains(out, want) {
+	flat := strings.Join(strings.Fields(out), " ") // columns' widths aside
+	for _, want := range []string{"- unused server - Gone.Kept.cfg", "- unused client - Gone.Kept.cfg",
+		"? unused? server - Gone.Mod/data.yml", "1 config file(s) to copy, 4 unused to remove (2 on the server, 2 on this computer)"} {
+		if !strings.Contains(flat, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
 	}
@@ -231,8 +247,8 @@ func TestConfigsCleanRemovesUnused(t *testing.T) {
 
 func TestConfigsCleanTickAMaybeUnused(t *testing.T) {
 	s, sc := cleanCase(t)
-	// rows: 1 new, 2-3 differs, 4-5 unused, 6 unused? Gone.Mod/data.yml -> tick 6, done, apply
-	out, err := s.run(t, "6\n\ny\n", "-p", "MyProfile")
+	// rows: 1 new, 2-3 differs, 4-7 unused (server, client), 8 unused? Gone.Mod/data.yml -> tick 8, done, apply
+	out, err := s.run(t, "8\n\ny\n", "-p", "MyProfile")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
