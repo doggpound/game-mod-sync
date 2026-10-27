@@ -18,7 +18,8 @@ import (
 type Item struct {
 	Dir    string   // config folder, e.g. BepInEx/config
 	Path   string   // inside it, e.g. Azumatt.FastLink.cfg
-	State  string   // "new" (not on the server), "differs", or "unused" (only on the server, no mod there uses it)
+	State  string   // "new" (not on the server), "differs", or "unused" (on the server, no mod there uses it)
+	Sure   bool     // unused: a .cfg (named after its mod's plugin id), so surely unused; other files may belong to a mod under any name
 	Mod    string   // mod folder it belongs to; "" = unknown
 	Side   string   // client, server, both, or "" (unknown)
 	Detail []string // differs: the settings that differ (short)
@@ -40,8 +41,9 @@ type Scanner struct {
 	TagServer  string
 	Verbose    bool // also list files of mods that aren't in the profile
 	// Clean also finds the server's config files that no mod left on the
-	// server uses: not in the profile, and from none of the profile's mods
-	// or of the server's mods that the sync leaves alone (Keep).
+	// server uses: from none of the profile's mods, nor of the server's mods
+	// that the sync leaves alone (Keep). The profile may have them too (mod
+	// managers keep a removed mod's configs).
 	Clean bool
 	Keep  transfer.Excludes // the sync's excludes: what it leaves alone in SyncDirs
 	Info  func(string)
@@ -89,8 +91,8 @@ func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 		r.local[cdir], r.server[cdir] = lt, st
 		if s.Clean {
 			for rel, sv := range st {
-				if _, mine := lt[rel]; !mine && !sv.Dir && !s.Skip.Match(rel, false) {
-					unused = append(unused, Item{Dir: cdir, Path: rel, State: "unused"})
+				if !sv.Dir && !s.Skip.Match(rel, false) {
+					unused = append(unused, Item{Dir: cdir, Path: rel, State: "unused", Sure: isCfg(rel) && !strings.Contains(rel, "/")})
 				}
 			}
 		}
@@ -208,12 +210,29 @@ func (s *Scanner) Scan(m *transfer.Manifest) (*Result, error) {
 			r.Items = append(r.Items, it)
 		}
 	}
+	// A file that's unused on the server isn't offered for copying too.
+	gone := map[string]bool{}
+	for _, it := range r.Items {
+		if it.State == "unused" {
+			gone[it.Dir+"/"+it.Path] = true
+		}
+	}
+	kept := r.Items[:0]
+	for _, it := range r.Items {
+		if it.State == "unused" || !gone[it.Dir+"/"+it.Path] {
+			kept = append(kept, it)
+		}
+	}
+	r.Items = kept
 	// New ones first, then differing, then unused; by mod and file.
 	order := map[string]int{"new": 0, "differs": 1, "unused": 2}
 	sort.SliceStable(r.Items, func(i, j int) bool {
 		a, b := r.Items[i], r.Items[j]
 		if a.State != b.State {
 			return order[a.State] < order[b.State]
+		}
+		if a.Sure != b.Sure {
+			return a.Sure // surely unused ones first
 		}
 		if ma, mb := strings.ToLower(a.Mod), strings.ToLower(b.Mod); ma != mb {
 			return ma < mb

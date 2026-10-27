@@ -85,11 +85,13 @@ nothing on the server is deleted.
 
 - **Mods and patchers**: the sync folders are mirrored, so mods that aren't in the profile are
   removed (except excluded and server-managed files).
-- **Config files**: a file only on the server whose owner (see [Config files](#config-files)) is
-  none of the profile's mods, nor a mod the sync leaves on the server (a server-managed
-  `ValheimPlus.dll` keeps `valheim_plus.cfg`), is *unused*: listed in the checklist, ticked, and
-  removed. A folder left empty by that goes too. `BepInEx.cfg` and the game file's `config_skip`
-  are never touched.
+- **Config files**: a server file whose owner (see [Config files](#config-files)) is none of the
+  profile's mods, nor a mod the sync leaves on the server (a server-managed `ValheimPlus.dll`
+  keeps `valheim_plus.cfg`), is *unused*, also when the profile has it: mod managers keep a
+  removed mod's configs. A `.cfg` at the top is named after its mod's plugin id, so it's surely
+  unused: listed, ticked and removed. Other files (`alias.yaml`) may be read by a mod under any
+  name: listed as `unused?`, not ticked. A folder left empty goes too. `BepInEx.cfg` and the game
+  file's `config_skip` are never touched.
 
 Everything removed goes to the backups first, like any replaced file.
 
@@ -124,8 +126,8 @@ the profile (`-v` shows them).
   cached with no tags), then mod managers that know them offline (`ModTagger`: Gale's
   `thunderstore_cache.json`), then Thunderstore (6 at a time, 10 s each; a network error caches
   nothing). Client-only mods' files are listed but never copied.
-- **Defaults**: new files ticked (if their mod is known), differing ones not, unused ones ticked;
-  `-y` copies new ones and removes unused ones.
+- **Defaults**: new files ticked (if their mod is known), differing ones not, unused `.cfg` files
+  ticked, other unused ones not; `-y` copies new ones and removes the unused `.cfg` files.
 
 The mod changes and the picked config files are reviewed together and applied with one backup time.
 

@@ -33,10 +33,14 @@ STATUS
            copying it replaces the server's settings with yours.
            d (text) or opening the row (full screen) shows each setting
            that differs: the server's value, then yours.
-  unused   only on the server, and no mod in your profile (or that
-           the server keeps) uses it. Ticked: removed, so the server
-           only has the configs of the mods it runs. --no-clean (or
-           clean = false in the settings) leaves them alone.
+  unused   on the server, and no mod in your profile (or that the
+           server keeps) uses it: a config file named after a mod that's
+           gone. Ticked: removed, so the server only has the configs of
+           the mods it runs. --no-clean (or clean = false in the
+           settings) leaves them alone.
+  unused?  no mod's name matches it, but it isn't a mod's own .cfg
+           (e.g. alias.yaml), so a mod may still read it. Not ticked:
+           tick it if you know it's left over.
 
 SIDE (from the mod's Thunderstore tags)
   server   runs on the server
@@ -155,18 +159,21 @@ func (x *configExtra) layout() {
 			x.client = append(x.client, configs.ModName(it.Mod))
 			continue
 		}
-		side, name := it.Side, modLabel(it.Mod)
+		state, side, name := it.State, it.Side, modLabel(it.Mod)
 		if it.State == "unused" {
 			side, name = "-", "-"
+			if !it.Sure {
+				state = "unused?"
+			}
 		} else if side == "" {
 			side = "?"
 		}
 		if len(name) > 26 {
 			name = name[:26]
 		}
-		x.rows = append(x.rows, fmt.Sprintf("%-8s %-7s %-*s  %s", it.State, side, wm, name, cutStart(it.Path, fmax)))
+		x.rows = append(x.rows, fmt.Sprintf("%-8s %-7s %-*s  %s", state, side, wm, name, cutStart(it.Path, fmax)))
 		x.idx = append(x.idx, i)
-		x.on = append(x.on, (it.State == "new" && it.Mod != "") || it.State == "unused")
+		x.on = append(x.on, (it.State == "new" && it.Mod != "") || (it.State == "unused" && it.Sure))
 	}
 }
 
@@ -217,8 +224,10 @@ func (x *configExtra) Preview(yes bool) {
 	}
 	for i, r := range x.rows {
 		mark := "~"
-		if x.res.Items[x.idx[i]].State == "unused" {
+		if it := x.res.Items[x.idx[i]]; it.State == "unused" && it.Sure {
 			mark = "-"
+		} else if it.State == "unused" {
+			mark = "?"
 		} else if x.on[i] {
 			mark = "+"
 		}
