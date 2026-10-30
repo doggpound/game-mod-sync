@@ -30,7 +30,7 @@ func Owners(files, mods []string, ids map[string]string) map[string]string {
 			n = n[i+1:]
 		}
 		n = norm(n)
-		if _, dup := short[n]; dup {
+		if prev, dup := short[n]; dup && prev != m { // the same mod can be in two sync folders
 			short[n] = ""
 		} else {
 			short[n] = m

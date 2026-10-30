@@ -257,7 +257,7 @@ func (f *FolderSync) Run() error {
 		f.UI.Say("Config files done: " + f.Extra.Describe() + ".")
 	}
 	if f.KeepBackups > 0 {
-		f.UI.Say("Previous files: " + path.Join(backups, ts))
+		f.UI.Say("Previous files on the server: " + path.Join(backups, ts))
 	}
 	return nil
 }

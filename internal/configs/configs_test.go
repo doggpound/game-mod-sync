@@ -181,3 +181,12 @@ func TestNoNetworkLeavesModsUnknownAndUncached(t *testing.T) {
 		t.Error("a failed lookup was cached")
 	}
 }
+
+// A mod in two sync folders (Gale puts HookGenPatcher in plugins and
+// patchers) is still one mod, not two with the same name.
+func TestOwnersSameModTwice(t *testing.T) {
+	mods := []string{"ValheimModding-HookGenPatcher", "ValheimModding-HookGenPatcher"}
+	if got := Owners([]string{"HookGenPatcher.cfg"}, mods, nil)["HookGenPatcher.cfg"]; got != "ValheimModding-HookGenPatcher" {
+		t.Errorf("HookGenPatcher.cfg -> %q", got)
+	}
+}
